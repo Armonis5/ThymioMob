@@ -214,7 +214,7 @@ def dijkstra(adjacency_list, point_names):
 
     return previous_nodes, shortest_dist
 
-def find_path(adjacency_list, point_names):
+def find_path(adjacency_list, point_names,distances):
     dist = 0
     previous_nodes, shortest_dist = dijkstra(adjacency_list, point_names)
     path = ['G']
