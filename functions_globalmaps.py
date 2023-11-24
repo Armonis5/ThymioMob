@@ -222,6 +222,6 @@ def find_path(adjacency_list, point_names,distances):
     while current_node != 'S':
         current_node = previous_nodes[current_node]
         path.append(current_node)
-        d = d+get_distance(distances,current_node, previous_nodes[current_node]) 
+        dist = dist +get_distance(distances,current_node, previous_nodes[current_node]) 
     path.reverse()
-    return path
+    return path, dist
