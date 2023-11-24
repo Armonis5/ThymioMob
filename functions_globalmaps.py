@@ -104,7 +104,7 @@ def object_ptsname(object_edges):
 #Creates the connectivity graph
 
 #Function that returns if two points are connected to each other
-def is_connected(point1, point2, object_edges):
+def is_connected(point1, point2, object_edges,SandG):
     point_names = name2coord(object_edges, SandG)
     coordinate_to_name = {v: k for k, v in point_names.items()}
     point_objects = object_ptsname(object_edges)
@@ -148,8 +148,6 @@ def is_connected(point1, point2, object_edges):
 #Go through all points and find which points are connected to create the adjacency list
 def generate_adjacency_list(object_edges, SandG):
     point_names = name2coord(object_edges, SandG)
-    point_objects = object_ptsname(object_edges)
-    coordinate_to_name = {v: k for k, v in point_names.items()}
     adjacency_list = {}
 
     for P1, coord1 in point_names.items():
@@ -224,5 +222,6 @@ def find_path(adjacency_list, point_names):
     while current_node != 'S':
         current_node = previous_nodes[current_node]
         path.append(current_node)
+        d = d+get_distance(distances,current_node, previous_nodes[current_node]) 
     path.reverse()
     return path
