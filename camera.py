@@ -2,17 +2,68 @@ import numpy as np
 import cv2
 import time
 import vision_utils as utils
-import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
-GREEN_HSV_LOWER = np.array([35, 100, 100])
-GREEN_HSV_UPPER = np.array([85, 255, 255])
 
-BLUE_HSV_LOWER = np.array([100, 100, 100])
-BLUE_HSV_UPPER = np.array([140, 255, 255])
+GREEN_RGB = np.array([0, 255, 0], dtype=np.uint8)
+BLUE_RGB = np.array([0, 0, 255], dtype=np.uint8)
+BLACK_RGB = np.array([0, 0, 0], dtype=np.uint8)
 
-BLACK_HSV_LOWER = np.array([0, 0, 0])
-BLACK_HSV_UPPER = np.array([180, 255, 30])
+COLOR_THREASHOLD = 20
+SATURATION_THRESHOLD = 200
+BRIGHTNESS_THRESHOLD = 70
 
+
+# GREEN_HSV_LOWER = np.array([35, 80, 80])
+# GREEN_HSV_UPPER = np.array([145, 255, 255])
+# BLUE_HSV_LOWER = np.array([170, 80, 80])
+# BLUE_HSV_UPPER = np.array([270, 255, 255])
+# BLACK_HSV_LOWER = np.array([0, 0, 0])
+# BLACK_HSV_UPPER = np.array([360, 255, 255])
+
+
+def color_to_hsv(color):
+    color = color/255
+    hsv = colors.rgb_to_hsv(color)
+    hsv[0] = hsv[0]*180
+    hsv[1] = hsv[1]*255
+    hsv[2] = hsv[2]*255
+    return hsv.astype(np.uint8)
+
+# Calculate the saturation of each rgb channel and return the average, knowing that the image is in HSV format
+def image_saturation(image):
+    saturation = np.mean(image, axis=2)
+    return saturation
+
+def hsv_range(base_color, color_threashold,saturation_threshold, brightness_threshold):
+    # Convert base color to HSV
+    hsv_base_color = color_to_hsv(base_color)
+    # Extract hue, saturation and value from base color
+    h, s, v = hsv_base_color[0], hsv_base_color[1], hsv_base_color[2]
+    # Define lower and upper bounds for hue
+    lower_hue = h - color_threashold
+    upper_hue = h + color_threashold
+    if lower_hue < 0:
+        lower_hue = 180 + lower_hue
+    if upper_hue > 180:
+        upper_hue = upper_hue - 180
+
+    if lower_hue > upper_hue:
+        tmp = lower_hue
+        lower_hue = upper_hue
+        upper_hue = tmp
+    lower = np.array([lower_hue, saturation_threshold, brightness_threshold])
+    upper = np.array([upper_hue, 255, 255])
+
+    return lower, upper
+
+def black_range_hsv(brightness_threshold):
+    lower = np.array([0, 0, 0])
+    upper = np.array([360, 255, brightness_threshold-1])
+    return lower, upper
+
+
+    
 
 
 def find_coordinates(contours, color):
@@ -57,22 +108,26 @@ def sort_by_centroid(coordinates):
         coordinates.sort(key=lambda box: np.mean(box, axis=0)[0])  # Sort by x-coordinate of centroid
         return coordinates
 
-def obstacle_detection(frame,mode):
+def obstacle_detection(frame,mode,color_type):
+    match color_type:
+        case 'BGR':
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        case _:
+            frame = frame
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    hsv = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
 
+    green_lower, green_upper = hsv_range(GREEN_RGB, COLOR_THREASHOLD, SATURATION_THRESHOLD, BRIGHTNESS_THRESHOLD)
+    blue_lower, blue_upper = hsv_range(BLUE_RGB, COLOR_THREASHOLD, SATURATION_THRESHOLD, BRIGHTNESS_THRESHOLD)
+    black_lower, black_upper = black_range_hsv(BRIGHTNESS_THRESHOLD-1)
+    
     # Define color ranges for green squares
-
-    green_mask = cv2.inRange(hsv, GREEN_HSV_LOWER, GREEN_HSV_UPPER)
-
+    green_mask = cv2.inRange(hsv, green_lower, green_upper)
     # Define color ranges for blue squares
-    blue_mask = cv2.inRange(hsv, BLUE_HSV_LOWER, BLUE_HSV_UPPER)
-
+    blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
     # Define color ranges for black squares or rectangles
-
-    black_mask = cv2.inRange(hsv, BLACK_HSV_LOWER, BLACK_HSV_UPPER)
+    black_mask = cv2.inRange(hsv, black_lower, black_upper)
 
     # Find contours for each colour
     green_contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -80,8 +135,8 @@ def obstacle_detection(frame,mode):
     black_contours, _ = cv2.findContours(black_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     black_contours = black_contours[2:] # Exclude the map contour
     cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red       color for   black   squares
-    cv2.drawContours(frame, green_contours, -1, (0, 165, 255), 3);  # Orange    color for   green   squares
-    cv2.drawContours(frame, blue_contours, -1, (255, 0,0), 3);     # Yellow    color for   blue    squares
+    cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Orange    color for   green   squares
+    cv2.drawContours(frame, blue_contours, -1, (255, 0, 0), 3);  # Pink    color for   blue    squares
     # Define the coordinates of the map
     map_coordinates = [(0, 0), (0, 1000), (1000, 1000), (1000, 0)]
 
@@ -109,13 +164,22 @@ def obstacle_detection(frame,mode):
     green_coordinates = [tuple(coord) for coord in green_coordinates]
     black_coordinates = [tuple(coord) for coord in black_coordinates]
 
-    if mode == 50:
-        plt.imshow(frame)
-        plt.show()
-        plt.imshow(hsv)
-        plt.show()
+    match mode:
+        case 'blue':
+            frame = blue_mask
+        case 'green':
+            frame = green_mask
+        case 'black':
+            frame = black_mask
+        case 'hsv':
+            frame = hsv
+        case 'all':
+            frame = frame
+        case _:
+            print('Invalid mode')
+            frame = frame
 
-    return blue_coordinates, green_coordinates, black_coordinates
+    return frame, blue_coordinates, green_coordinates, black_coordinates
 
 
 def zoom_frame(frame, zoom_factor=2):
