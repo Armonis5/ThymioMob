@@ -29,3 +29,11 @@ def frame_draw(frame, robot_position, path_points, start_point, end_point):
     draw_point(frame, start_point, START_COLOR)
     draw_point(frame, end_point, END_COLOR)
     draw_arrow(frame, robot_position[0],robot_position[1],ROBOT_COLOR)
+
+def on_trackbar(val,treshold):
+    color_threshold = cv2.getTrackbarPos('Color Threshold', 'Camera Vision')
+    saturation_threshold = cv2.getTrackbarPos('Saturation Threshold', 'Camera Vision')
+    brightness_threshold = cv2.getTrackbarPos('Brightness Threshold', 'Camera Vision')
+    treshold[0] = color_threshold
+    treshold[1] = saturation_threshold
+    treshold[2] = brightness_threshold

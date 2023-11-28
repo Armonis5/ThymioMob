@@ -9,9 +9,11 @@ GREEN_RGB = np.array([0, 255, 0], dtype=np.uint8)
 BLUE_RGB = np.array([0, 0, 255], dtype=np.uint8)
 BLACK_RGB = np.array([0, 0, 0], dtype=np.uint8)
 
+
+### Based parameters for the color detection
 COLOR_THREASHOLD = 20
-SATURATION_THRESHOLD = 200
-BRIGHTNESS_THRESHOLD = 70
+SATURATION_THRESHOLD = 130
+BRIGHTNESS_THRESHOLD = 60
 
 
 # GREEN_HSV_LOWER = np.array([35, 80, 80])
@@ -84,31 +86,11 @@ def find_coordinates(contours, color):
                     coordinates.append([(cX, cY)])
     return coordinates
 
-def write_colour_label(image, coordinates, color):
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    
-    color_text_map = {
-        'Black': (255, 255, 255),   # White text for Black contour
-        'Green': (0, 155, 255),     # Orange text for Green contour 
-        'Blue' : (255, 0, 0),       # Yellow text for Blue contour
-    }
-
-    text_color = color_text_map.get(color, (255, 255, 255))  # Default to white if no mapping found
-
-    for coord in coordinates:
-        if len(coord) == 1:
-            x, y = coord[0]  # Extract x and y from the single coordinate
-        else:
-            x, y = coord  # Extract x and y from the tuple
-        cv2.putText(image, color, (x, y), font, 1, text_color, 2, cv2.LINE_AA)
-
-    return image
-
 def sort_by_centroid(coordinates):
         coordinates.sort(key=lambda box: np.mean(box, axis=0)[0])  # Sort by x-coordinate of centroid
         return coordinates
 
-def obstacle_detection(frame,mode,color_type):
+def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD):
     match color_type:
         case 'BGR':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -116,11 +98,9 @@ def obstacle_detection(frame,mode,color_type):
             frame = frame
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-
-
-    green_lower, green_upper = hsv_range(GREEN_RGB, COLOR_THREASHOLD, SATURATION_THRESHOLD, BRIGHTNESS_THRESHOLD)
-    blue_lower, blue_upper = hsv_range(BLUE_RGB, COLOR_THREASHOLD, SATURATION_THRESHOLD, BRIGHTNESS_THRESHOLD)
-    black_lower, black_upper = black_range_hsv(BRIGHTNESS_THRESHOLD-1)
+    green_lower, green_upper = hsv_range(GREEN_RGB, color_threashold, saturation_threshold, brightness_threshold)
+    blue_lower, blue_upper = hsv_range(BLUE_RGB, color_threashold, saturation_threshold, brightness_threshold)
+    black_lower, black_upper = black_range_hsv(brightness_threshold-1)
     
     # Define color ranges for green squares
     green_mask = cv2.inRange(hsv, green_lower, green_upper)
@@ -135,8 +115,8 @@ def obstacle_detection(frame,mode,color_type):
     black_contours, _ = cv2.findContours(black_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     black_contours = black_contours[2:] # Exclude the map contour
     cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red       color for   black   squares
-    cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Orange    color for   green   squares
-    cv2.drawContours(frame, blue_contours, -1, (255, 0, 0), 3);  # Pink    color for   blue    squares
+    cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Green    color for   green   squares
+    cv2.drawContours(frame, blue_contours, -1, (255, 0, 0), 3);  # Blue    color for   blue    squares
     # Define the coordinates of the map
     map_coordinates = [(0, 0), (0, 1000), (1000, 1000), (1000, 0)]
 
