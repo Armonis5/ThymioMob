@@ -1,5 +1,3 @@
-%reset -f
-import matplotlib.pyplot as plt
 import random
 
 #ALL FUNCTIONS
