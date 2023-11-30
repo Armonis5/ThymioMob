@@ -1,84 +1,8 @@
 import random
 
 #ALL FUNCTIONS
+
 ############################################################################################################
-#function that generates random objects    
-def generate_pts_object(range_pts):
-    points = []
-    num_points = random.randint(4, 4)  # Random number of points for each object between 3 and 8
-    while len(points) < num_points:
-        # Add a random point to the list of points
-        point = (random.uniform(-range_pts, range_pts), random.uniform(-range_pts, range_pts))
-        points.append(point)
-
-        # Check for intersection with the previous segments in the list
-        if len(points) >= 4:
-            for j in range(len(points)-3):
-                if intersect(points[len(points)-1], points[len(points)-2], points[j], points[j+1]) or intersect(points[0], points[len(points)-1], points[j+1], points[j+2]):
-                    points.pop()  # Remove the last point if it intersects
-                    break
-            
-    return points
-
-def generate_all_objects(object_edges, min_objects, max_objects,range_pts):
-    num_objects = random.randint(min_objects, max_objects)
-
-    for i in range(num_objects):
-        intersects = True
-        while intersects:
-            intersects = False
-            points = generate_pts_object(range_pts)
-
-            # Check if the current object intersects with any of the previous objects
-            for j in range(i):
-                for k in range(len(points) - 1):
-                    for l in range(len(object_edges[f"Object_{j}"]) - 1):
-                        if intersect(points[k], points[k + 1], object_edges[f"Object_{j}"][l],
-                                     object_edges[f"Object_{j}"][l + 1]):
-                            intersects = True
-                            break
-                    if intersects:
-                        break
-                if intersects:
-                    break
-
-            if not intersects:
-                object_edges[f"Object_{i}"] = points
-                break  # Break out of the while loop once a non-intersecting object is found
-
-    return object_edges
-
-def point_in_polygon(point, polygon):
-    n = len(polygon)
-    inside = False  
-
-    x, y = point
-    for i in range(n):
-        j = (i + 1) % n
-        xi, yi = polygon[i]
-        xj, yj = polygon[j]
-
-        intersect = ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
-        if intersect:
-            inside = not inside
-
-    return inside
-
-def generate_random_point_not_in_polygons(object_edges,range_pts):
-    while True:
-        # Generate a random point within a range (adjust range as needed)
-        random_point = (random.uniform(0, range_pts), random.uniform(0, range_pts))
-
-        # Check if the random point is inside any polygon
-        inside_polygon = False
-        for polygon_points in object_edges.values():
-            if point_in_polygon(random_point, polygon_points):
-                inside_polygon = True
-                break
-
-        if not inside_polygon:
-            return random_point
-
 
 def grow_obstacles(object_edges, robot_size):
     expanded_edges = {}
@@ -301,26 +225,32 @@ def find_path(adjacency_list, point_names):
     path.reverse()
     return path
 
-
 #############################################################################################################
-object_edges = {}
-range_pts = 200
-object_edges = {
-    'Quadrilateral_1': [(30, 130), (130, 130), (130, 30), (30, 30)],
-    'Quadrilateral_2': [(160, 240), (260, 240), (230, 140), (160, 140)],
-    'Quadrilateral_3': [(220, 110), (320, 110), (320, 10), (220, 10)]
+
+# Generate random objects with random points and add them to the object_edges dictionary
+
+object_corners = {
+    'Quadrilateral_1': [(53, 107), (107, 107), (107, 53), (53, 53)],
+    'Quadrilateral_2': [(183, 217), (237, 217), (207, 163), (183, 163)],
+    'Quadrilateral_3': [(243, 87), (297, 87), (297, 33), (243, 33)]
 }
 
 SandG = {
-"start" : (50,10),
+"start" : (50,15),
 "goal" : (144, 139)
 }
 robot_size = 23
 
-
-object_corners= object_edges
-expended_edges = grow_obstacles(object_corners, robot_size)
-points_name2coord = name2coord(object_corners, SandG)
-adjacent_list = generate_adjacency_list(object_corners, SandG)
+expended_corners = grow_obstacles(object_corners, robot_size)
+points_name2coord = name2coord(expended_corners, SandG)
+adjacent_list = generate_adjacency_list(expended_corners, SandG)
 distances = calculate_distances(adjacent_list, points_name2coord)
 shortest_path = find_path(adjacent_list, points_name2coord)
+
+
+path = []
+for name in shortest_path:
+    path.append(points_name2coord[name])
+
+print("shortest_path: ", shortest_path)
+print("coordinates: ", path)
