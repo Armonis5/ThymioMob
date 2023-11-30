@@ -65,25 +65,36 @@ def black_range_hsv(brightness_threshold):
     return lower, upper
 
 
-    
-
-
 def find_coordinates(contours, color):
-    coordinates = []
+    coordinates = {}
+    obstacle_counter = 1
     for cnt in contours:
         approx = cv2.approxPolyDP(cnt, 0.009 * cv2.arcLength(cnt, True), True)
         if len(approx) == 4:
             rectangle = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rectangle)
-            box = np.int0(box)
+            box = np.intp(box)  
+            
+            # Give the coordinates of the rectangles in the desired order
+            new_order = np.array([box[1], box[2], box[3], box[0]])
+            box = new_order
+
             if color == 'Black':
-                coordinates.append(box)
+                rectangle_corners = []
+                for point in box:
+                    corner = (point[0], point[1])
+                    rectangle_corners.append(corner)
+                coordinates[f"Obstacle_{obstacle_counter}"] = rectangle_corners
+                obstacle_counter += 1
             elif color in ['Green', 'Blue']:
                 M = cv2.moments(cnt)
                 if M["m00"] != 0:
                     cX = int(M["m10"] / M["m00"])
                     cY = int(M["m01"] / M["m00"])
-                    coordinates.append([(cX, cY)])
+                    if color == 'Green':
+                        coordinates["Goal"] = (cX, cY)
+                    else:
+                        coordinates["Position"] = (cX, cY)
     return coordinates
 
 def sort_by_centroid(coordinates):
