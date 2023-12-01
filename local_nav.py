@@ -28,11 +28,11 @@ def predict(state, input_val, covariance, Ts, theta, process_noise, thymio_b=11,
 
 def measure(state, covariance, cam_measurement):
     # Update step based on camera measurement
-    if cam_measurement = ...: # camera not covered
+    if cam_measurement: # camera not covered
         C = np.array([[1, 0, 0, 0, 0, 0],
                     [0, 1, 0, 0, 0, 0]])  # Measurement matrix
 
-        R = measurement_noise # Measurement noise covariance
+        R = np.array([0.1, 0.1]) # Measurement noise covariance
         i_t = cam_measurement - np.dot(C, state) #innovation 
         S_t = np.dot(C, np.dot(covariance, C.T)) + R #innovation of variance
     
