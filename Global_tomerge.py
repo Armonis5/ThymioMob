@@ -4,16 +4,48 @@ import random
 
 ############################################################################################################
 
-def grow_obstacles(object_edges, robot_size):
-    expanded_edges = {}
+import math
 
-    for obj_id, points in object_edges.items():
-        P0 = (points[0][0] - robot_size, points[0][1] + robot_size)
-        P1 = (points[1][0] + robot_size, points[1][1] + robot_size)
-        P2 = (points[2][0] + robot_size, points[2][1] - robot_size)
-        P3 = (points[3][0] - robot_size, points[3][1] - robot_size)
-        expanded_edges[obj_id]= [P0, P1, P2, P3]
-    return expanded_edges
+def get_delta(p1, p2, size_robot):
+    alpha = math.atan2((p1[1] - p2[1]), (p1[0] - p2[0]))
+    deltax = abs(size_robot * math.cos(alpha))
+    deltay = abs(size_robot * math.sin(alpha))
+    return deltax, deltay
+
+def grow_obstacles(start_obj, size_robot):
+    expended_object = {}
+
+    for obj_id, points in start_obj.items():
+        expended_object[obj_id] = points[:]
+        for i in range(0, 2):
+            x1, y1 = points[i]
+            x2, y2 = points[i + 2]
+
+            # Arrange points based on positions
+            p1, p2 = (x1, y1), (x2, y2) if (x1 < x2 and y1 > y2) or (x1 > x2 and y1 < y2) else (x2, y2), (x1, y1)
+
+            deltax, deltay = get_delta(p1, p2, size_robot)
+
+            if x1 != x2 and y1 != y2:
+                if x1 < x2:
+                    p1 = (p1[0] - deltax, p1[1] + deltay)
+                    p2 = (p2[0] + deltax, p2[1] - deltay)
+                else:
+                    p1 = (p1[0] + deltax, p1[1] + deltay)
+                    p2 = (p2[0] - deltax, p2[1] - deltay)
+            else:
+                if y1 != y2:
+                    p1 = (p1[0], p1[1] + deltay)
+                    p2 = (p2[0], p2[1] - deltay)
+                else:
+                    p1 = (p1[0] + deltax, p1[1])
+                    p2 = (p2[0] - deltax, p2[1])
+
+            expended_object[obj_id][i] = p1
+            expended_object[obj_id][i + 2] = p2
+
+    return expended_object
+
 
 
 #############################################################################################################
