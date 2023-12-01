@@ -7,10 +7,8 @@ import math
 
 def get_delta(p1, p2, size_robot):
     alpha = math.atan2((p1[1]-p2[1]),(p1[0]-p2[0]))
-
     deltax= abs(size_robot*math.cos(alpha))
     deltay= abs(size_robot*math.sin(alpha))
-    print(deltax, deltay)
     return deltax, deltay
 
 def grow_obstacles(start_obj, size_robot):
@@ -166,7 +164,7 @@ def name2coord(object_edges, GandS):
         for point in points_list:
             point_names[f'P{j}'] = point
             j += 1
-    point_names['S']=GandS['start']
+    point_names['R']=GandS['robot']
     point_names['G']=GandS['goal']
     return point_names
 
@@ -304,30 +302,30 @@ def find_path(adjacency_list, point_names):
 
 #############################################################################################################
 
-# Generate random objects with random points and add them to the object_edges dictionary
+# # Generate random objects with random points and add them to the object_edges dictionary
 
-object_corners = {
-    'Quadrilateral_1': [(53, 107), (107, 107), (107, 53), (53, 53)],
-    'Quadrilateral_2': [(183, 217), (237, 217), (207, 163), (183, 163)],
-    'Quadrilateral_3': [(243, 87), (297, 87), (297, 33), (243, 33)]
-}
+# object_corners = {
+#     'Quadrilateral_1': [(53, 107), (107, 107), (107, 53), (53, 53)],
+#     'Quadrilateral_2': [(183, 217), (237, 217), (207, 163), (183, 163)],
+#     'Quadrilateral_3': [(243, 87), (297, 87), (297, 33), (243, 33)]
+# }
 
-SandG = {
-"start" : (50,15),
-"goal" : (144, 139)
-}
-robot_size = 23
+# SandG = {
+# "robot" : (50,15),
+# "goal" : (144, 139)
+# }
+# robot_size = 23
 
-expended_corners = grow_obstacles(object_corners, robot_size)
-points_name2coord = name2coord(expended_corners, SandG)
-adjacent_list = generate_adjacency_list(expended_corners, SandG)
-distances = calculate_distances(adjacent_list, points_name2coord)
-shortest_path = find_path(adjacent_list, points_name2coord)
+# expended_corners = grow_obstacles(object_corners, robot_size)
+# points_name2coord = name2coord(expended_corners, SandG)
+# adjacent_list = generate_adjacency_list(expended_corners, SandG)
+# distances = calculate_distances(adjacent_list, points_name2coord)
+# shortest_path = find_path(adjacent_list, points_name2coord)
 
 
-path = []
-for name in shortest_path:
-    path.append(points_name2coord[name])
+# path = []
+# for name in shortest_path:
+#     path.append(points_name2coord[name])
 
-print("shortest_path: ", shortest_path)
-print("coordinates: ", path)
+# print("shortest_path: ", shortest_path)
+# print("coordinates: ", path)
