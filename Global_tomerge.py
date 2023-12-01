@@ -1,51 +1,98 @@
 import random
+import math
 
 #ALL FUNCTIONS
 
 ############################################################################################################
 
-import math
+
 
 def get_delta(p1, p2, size_robot):
-    alpha = math.atan2((p1[1] - p2[1]), (p1[0] - p2[0]))
-    deltax = abs(size_robot * math.cos(alpha))
-    deltay = abs(size_robot * math.sin(alpha))
+    alpha = math.atan2((p1[1]-p2[1]),(p1[0]-p2[0]))
+
+    deltax= abs(size_robot*math.cos(alpha))
+    deltay= abs(size_robot*math.sin(alpha))
+    print(deltax, deltay)
     return deltax, deltay
 
 def grow_obstacles(start_obj, size_robot):
+    # Calculate the adjusted coordinates for each vertex
     expended_object = {}
 
     for obj_id, points in start_obj.items():
         expended_object[obj_id] = points[:]
         for i in range(0, 2):
             x1, y1 = points[i]
-            x2, y2 = points[i + 2]
+            x2, y2 = points[i+2]
 
-            # Arrange points based on positions
-            p1, p2 = (x1, y1), (x2, y2) if (x1 < x2 and y1 > y2) or (x1 > x2 and y1 < y2) else (x2, y2), (x1, y1)
-
-            deltax, deltay = get_delta(p1, p2, size_robot)
-
-            if x1 != x2 and y1 != y2:
-                if x1 < x2:
-                    p1 = (p1[0] - deltax, p1[1] + deltay)
-                    p2 = (p2[0] + deltax, p2[1] - deltay)
-                else:
-                    p1 = (p1[0] + deltax, p1[1] + deltay)
-                    p2 = (p2[0] - deltax, p2[1] - deltay)
+            #first point on top left from second point
+            if (x1<x2 and y1>y2):
+                p1=(x1,y1)
+                p2=(x2,y2)
+                case=1
+            #second point on top left from first point
+            elif (x1>x2 and y1<y2):
+                p1=(x2,y2)
+                p2=(x1,y1)
+                case=1
+            #first point on top right from second point
+            elif (x1>x2 and y1>y2):
+                p1=(x1,y1)
+                p2=(x2,y2)
+                case=2
+            #second point on top right from first point
+            elif (x2>x1 and y2>y1):
+                p1=(x2,y2)
+                p2=(x1,y1)
+                case=2
+            #first above second
+            elif (x2==x1 and y1>y2):
+                p1=(x1,y1)
+                p2=(x2,y2)
+                case=3
+            #second above first
+            elif (x2==x1 and y2>y1):
+                p1=(x2,y2)
+                p2=(x1,y1)
+                case=3
+            #seconde on left of first
+            elif (x2>x1 and y2==y1):
+                p1=(x2,y2)
+                p2=(x1,y1)
+                case=4
+            #first on left of second
+            elif (x1>x2 and y2==y1):
+                p1=(x1,y1)
+                p2=(x2,y2)
+                case=4
             else:
-                if y1 != y2:
-                    p1 = (p1[0], p1[1] + deltay)
-                    p2 = (p2[0], p2[1] - deltay)
-                else:
-                    p1 = (p1[0] + deltax, p1[1])
-                    p2 = (p2[0] - deltax, p2[1])
+                print("error")
 
-            expended_object[obj_id][i] = p1
-            expended_object[obj_id][i + 2] = p2
+            deltax, deltay=get_delta(p1,p2,size_robot)
+    
+            if case==1:
+                p1=(p1[0]-deltax,p1[1]+deltay)
+                p2=(p2[0]+deltax,p2[1]-deltay)
+
+            elif case==2:
+                p1=(p1[0]+deltax,p1[1]+deltay)
+                p2=(p2[0]-deltax,p2[1]-deltay)
+
+            elif case==3:
+                p1=(p1[0],p1[1]+deltay)
+                p2=(p2[0],p2[1]-deltay)
+
+            elif case==4:
+                p1=(p1[0]+deltax,p1[1])
+                p2=(p2[0]-deltax,p2[1])
+
+            else:
+                print("error")
+
+            expended_object[obj_id][i]=p1
+            expended_object[obj_id][i+2]=p2
 
     return expended_object
-
 
 
 #############################################################################################################
