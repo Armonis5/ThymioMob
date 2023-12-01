@@ -6,9 +6,9 @@ from matplotlib.patches import Polygon
 def plot_expended_obstacles(object_corners, SandG, expended_corners):
     point_names = global_nav.name2coord(expended_corners, SandG)
     point_names2 = global_nav.name2coord(object_corners, SandG)
-    point_names.pop('S', None)
+    point_names.pop('R', None)
     point_names.pop('G', None)
-    point_names2.pop('S', None)
+    point_names2.pop('R', None)
     point_names2.pop('G', None)
     plt.figure(figsize=(8, 8))
 

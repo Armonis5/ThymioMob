@@ -269,7 +269,7 @@ def dijkstra(adjacency_list, point_names):
     infinity = 10e10
     for node in point_names.keys():
         shortest_dist[node] = infinity
-        shortest_dist['S'] = 0
+        shortest_dist['R'] = 0
 
     while unvisited_nodes:
         current_min_node = unvisited_nodes[0]
@@ -294,7 +294,7 @@ def find_path(adjacency_list, point_names):
     previous_nodes, shortest_dist = dijkstra(adjacency_list, point_names)
     path = ['G']
     current_node = 'G'
-    while current_node != 'S':
+    while current_node != 'R':
         current_node = previous_nodes[current_node]
         path.append(current_node)
     path.reverse()
