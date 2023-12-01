@@ -115,7 +115,7 @@ def find_coordinates(contours, color):
 
     return coordinates
 
-def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD):
+def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD):
     match color_type:
         case 'BGR':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -191,6 +191,7 @@ def zoom_frame(frame, zoom_factor=2):
     # Resizing cropped frame back to original frame size
     zoomed_frame = cv2.resize(cropped_frame, (width, height), interpolation=cv2.INTER_LINEAR)
     return zoomed_frame
+
 
 
 
