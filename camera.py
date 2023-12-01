@@ -68,14 +68,16 @@ def black_range_hsv(brightness_threshold):
 def find_coordinates(contours, color):
     coordinates = {}
     obstacle_counter = 1
+    blue_circle_counter = 1
+
     for cnt in contours:
         approx = cv2.approxPolyDP(cnt, 0.009 * cv2.arcLength(cnt, True), True)
+        
         if len(approx) == 4:
+            # Code for rectangles (existing logic)
             rectangle = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rectangle)
-            box = np.intp(box)  
-            
-            # Give the coordinates of the rectangles in the desired order
+            box = np.intp(box)
             new_order = np.array([box[1], box[2], box[3], box[0]])
             box = new_order
 
@@ -86,20 +88,32 @@ def find_coordinates(contours, color):
                     rectangle_corners.append(corner)
                 coordinates[f"Obstacle_{obstacle_counter}"] = rectangle_corners
                 obstacle_counter += 1
-            elif color in ['Green', 'Blue']:
+
+            elif color == 'Blue':
+                # Code for blue rectangles
                 M = cv2.moments(cnt)
                 if M["m00"] != 0:
                     cX = int(M["m10"] / M["m00"])
                     cY = int(M["m01"] / M["m00"])
-                    if color == 'Green':
-                        coordinates["Goal"] = (cX, cY)
-                    else:
-                        coordinates["Position"] = (cX, cY)
-    return coordinates
+                    coordinates["Position"] = (cX, cY)
 
-def sort_by_centroid(coordinates):
-        coordinates.sort(key=lambda box: np.mean(box, axis=0)[0])  # Sort by x-coordinate of centroid
-        return coordinates
+        elif color == 'Green':
+            # Code for green goal (existing logic)
+            M = cv2.moments(cnt)
+            if M["m00"] != 0:
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
+                coordinates["Goal"] = (cX, cY)
+
+        elif color == 'Blue':
+            # Code for blue circles
+            (x, y), radius = cv2.minEnclosingCircle(cnt)
+            center = (int(x), int(y))
+            radius = int(radius)
+            coordinates[f"Blue_Circle_{blue_circle_counter}"] = (center, radius)
+            blue_circle_counter += 1
+
+    return coordinates
 
 def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD):
     match color_type:
@@ -129,7 +143,7 @@ def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,s
     cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Green    color for   green   squares
     cv2.drawContours(frame, blue_contours, -1, (255, 0, 0), 3);  # Blue    color for   blue    squares
     # Define the coordinates of the map
-    map_coordinates = [(0, 0), (0, 1000), (1000, 1000), (1000, 0)]
+    # map_coordinates = [(0, 0), (0, 1000), (1000, 1000), (1000, 0)]
 
     # Blue squares
     blue_coordinates = []
@@ -140,20 +154,6 @@ def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,s
     # Black rectangles
     black_coordinates = []
     black_coordinates = find_coordinates(black_contours, 'Black')
-
-    blue_coordinates.sort(key=lambda x: x[0][0])
-    green_coordinates.sort(key=lambda x: x[0][0])
-    black_coordinates.sort(key=lambda x: x[0][0])
-
-    #Alternatively, if you want to ensure all the boxes are sorted in a specific manner, you might consider calculating their centroids and using these for sorting:
-
-    blue_coordinates = sort_by_centroid(blue_coordinates)
-    green_coordinates = sort_by_centroid(green_coordinates)
-    black_coordinates = sort_by_centroid(black_coordinates)
-
-    blue_coordinates = [tuple(coord) for coord in blue_coordinates]
-    green_coordinates = [tuple(coord) for coord in green_coordinates]
-    black_coordinates = [tuple(coord) for coord in black_coordinates]
 
     match mode:
         case 'blue':
@@ -172,6 +172,12 @@ def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,s
 
     return frame, blue_coordinates, green_coordinates, black_coordinates
 
+# Check if the camera is hidden (i.e. if the mask detecting the black squares is empty)
+def is_camera_hidden(black_mask):
+    if np.sum(black_mask) == 0:
+        return True
+    else:
+        return False
 
 def zoom_frame(frame, zoom_factor=2):
     height, width = frame.shape[:2]
