@@ -101,7 +101,7 @@ def sort_by_centroid(coordinates):
         coordinates.sort(key=lambda box: np.mean(box, axis=0)[0])  # Sort by x-coordinate of centroid
         return coordinates
 
-def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD):
+def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD):
     match color_type:
         case 'BGR':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -186,8 +186,6 @@ def zoom_frame(frame, zoom_factor=2):
     zoomed_frame = cv2.resize(cropped_frame, (width, height), interpolation=cv2.INTER_LINEAR)
     return zoomed_frame
 
-
-
 def capture_data(camera_index, num_frames=500):
     cap = cv2.VideoCapture(camera_index)
     data = []
@@ -204,8 +202,6 @@ def capture_data(camera_index, num_frames=500):
 
     cap.release()
     return np.array(data)
-
-
 
 
 def calculate_covariance_matrix(data):
