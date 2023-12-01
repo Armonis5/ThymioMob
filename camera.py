@@ -96,6 +96,30 @@ def find_coordinates(contours, color):
                     cX = int(M["m10"] / M["m00"])
                     cY = int(M["m01"] / M["m00"])
                     coordinates["Position"] = (cX, cY)
+    
+                # Code to check if the red shape is a square
+            if color == 'Red':
+                # To filter out rectangles and keep only squares, we can check if all sides are approximately equal
+                # First, find the width and height of the bounding rectangle
+                width = cv2.norm(approx[0] - approx[1])
+                height = cv2.norm(approx[1] - approx[2])
+                # Check if width and height are similar (you may adjust the tolerance)
+                if abs(width - height) <= max(width, height) * 0.2:  # 20% tolerance
+                    M = cv2.moments(cnt)
+                    if M["m00"] != 0:
+                        cX = int(M["m10"] / M["m00"])
+                        cY = int(M["m01"] / M["m00"])
+                        coordinates[f"Red_Square_{red_square_counter}"] = (cX, cY)
+                        red_square_counter += 1
+
+        elif len(approx) == 3 and color == 'Red':
+            # This is a triangle
+            M = cv2.moments(cnt)
+            if M["m00"] != 0:
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
+                coordinates[f"Red_Triangle_{red_triangle_counter}"] = (cX, cY)
+                red_triangle_counter += 1
 
         elif color == 'Green':
             # Code for green goal (existing logic)
@@ -115,6 +139,34 @@ def find_coordinates(contours, color):
 
     return coordinates
 
+def midpoint_robot(contours):
+    # Filter rectangles and triangles
+    red_rectangles = []
+    red_triangles = []
+    for cnt in contours:
+        approx = cv2.approxPolyDP(cnt, 0.02 * cv2.arcLength(cnt, True), True)
+        if len(approx) == 4:
+            red_rectangles.append(cnt)
+        elif len(approx) == 3:
+            red_triangles.append(cnt)
+    
+    # Check if both shapes are found
+    if len(red_rectangles) == 1 and len(red_triangles) == 1:
+        # Centroid of the rectangle (square)
+        rect = cv2.minAreaRect(red_rectangles[0])
+        rect_center = rect[0]
+        
+        # Centroid of the triangle
+        tri = cv2.minEnclosingTriangle(red_triangles[0])[0]
+        tri_center = np.mean(tri, axis=0)
+        
+        # Calculate midpoint between centroids
+        midpoint = ((rect_center[0] + tri_center[0]) / 2, (rect_center[1] + tri_center[1]) / 2)
+        
+        return rect_center, tri_center, midpoint
+    
+    return None, None, None  # Return None if shapes are not found or condition not met
+
 def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD):
     match color_type:
         case 'BGR':
@@ -126,22 +178,30 @@ def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,s
     green_lower, green_upper = hsv_range(GREEN_RGB, color_threashold, saturation_threshold, brightness_threshold)
     blue_lower, blue_upper = hsv_range(BLUE_RGB, color_threashold, saturation_threshold, brightness_threshold)
     black_lower, black_upper = black_range_hsv(brightness_threshold-1)
-    
+    red_lower, red_upper = hsv_range(RED_RGB, color_threashold, saturation_threshold, brightness_threshold)
+
     # Define color ranges for green squares
     green_mask = cv2.inRange(hsv, green_lower, green_upper)
     # Define color ranges for blue squares
     blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
     # Define color ranges for black squares or rectangles
     black_mask = cv2.inRange(hsv, black_lower, black_upper)
+    # Define color ranges for red shapes
+    red_mask = cv2.inRange(hsv, red_lower, red_upper)
 
     # Find contours for each colour
     green_contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     blue_contours, _ = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     black_contours, _ = cv2.findContours(black_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    red_contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+
     black_contours = black_contours[2:] # Exclude the map contour
     cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red       color for   black   squares
     cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Green    color for   green   squares
     cv2.drawContours(frame, blue_contours, -1, (255, 0, 0), 3);  # Blue    color for   blue    squares
+    cv2.drawContours(frame, red_contours, -1, (0, 0, 0), 3);  # Black    color for   red    squares
+
     # Define the coordinates of the map
     # map_coordinates = [(0, 0), (0, 1000), (1000, 1000), (1000, 0)]
 
@@ -154,6 +214,9 @@ def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,s
     # Black rectangles
     black_coordinates = []
     black_coordinates = find_coordinates(black_contours, 'Black')
+    # Red shapes
+    red_coordinates = []
+    red_coordinates = find_coordinates(red_contours, 'Red')
 
     match mode:
         case 'blue':
@@ -162,6 +225,8 @@ def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,s
             frame = green_mask
         case 'black':
             frame = black_mask
+        case 'red':
+            frame = red_mask
         case 'hsv':
             frame = hsv
         case 'all':
@@ -170,7 +235,7 @@ def obstacle_detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,s
             print('Invalid mode')
             frame = frame
 
-    return frame, blue_coordinates, green_coordinates, black_coordinates
+    return frame, blue_coordinates, green_coordinates, black_coordinates, red_coordinates
 
 # Check if the camera is hidden (i.e. if the mask detecting the black squares is empty)
 def is_camera_hidden(black_mask):
@@ -178,6 +243,22 @@ def is_camera_hidden(black_mask):
         return True
     else:
         return False
+        
+
+def robot_angle(square_centroid, triangle_centroid):
+    # Calculate vector from square centroid to triangle centroid
+    vec = (triangle_centroid[0] - square_centroid[0], triangle_centroid[1] - square_centroid[1])
+
+    # Calculate angle using arctan2
+    angle_rad = math.atan2(vec[1], vec[0])
+    angle_deg = math.degrees(angle_rad)
+    
+    # Ensure angle is between 0 and 360 degrees
+    if angle_deg < 0:
+        angle_deg += 360
+
+    return robot_angle
+
 
 def zoom_frame(frame, zoom_factor=2):
     height, width = frame.shape[:2]
