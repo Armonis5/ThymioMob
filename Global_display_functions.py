@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import random
 import Global_tomerge as global_nav
 from matplotlib.patches import Polygon
+import math
+
 
 def plot_expended_obstacles(object_corners, SandG, expended_corners):
     point_names = global_nav.name2coord(expended_corners, SandG)
@@ -12,7 +14,7 @@ def plot_expended_obstacles(object_corners, SandG, expended_corners):
     point_names2.pop('G', None)
     plt.figure(figsize=(8, 8))
 
-    # Merge both dictionaries while skipping the 'S' and 'G' keys
+    # Merge both dictionaries while skipping the 'R' and 'G' keys
     i = 0
     for pt, coord in point_names2.items():
         point_names[f"P{i}_init"] = coord
@@ -46,3 +48,5 @@ def plot_expended_obstacles(object_corners, SandG, expended_corners):
     # Show plot
     plt.grid(True)
     plt.show()
+
+
