@@ -61,11 +61,25 @@ def hsv_range(base_color, color_threashold,saturation_threshold, brightness_thre
 
     return lower, upper
 
+def compute_dimensions(blue_coordinates):
+    if len(blue_coordinates) != 4:
+        return "Error: Input should contain coordinates of 4 circles"
+
+    min_x = min(y[0] for circle in blue_coordinates for y in circle)
+    max_x = max(y[0] for circle in blue_coordinates for y in circle)
+    min_y = min(y[1] for circle in blue_coordinates for y in circle)
+    max_y = max(y[1] for circle in blue_coordinates for y in circle)
+
+    width = max_x - min_x
+    height = max_y - min_y
+
+    return width, height
+
+
 def black_range_hsv(brightness_threshold):
     lower = np.array([0, 0, 0])
     upper = np.array([360, 255, brightness_threshold-1])
     return lower, upper
-
 
 def find_coordinates(contours, color):
     coordinates = {}
@@ -88,7 +102,7 @@ def find_coordinates(contours, color):
         if color == 'Black':
             rectangle_corners = []
             for point in box:
-                corner = (point[0], point[1])
+                corner = (point[0], height - point[1])
                 rectangle_corners.append(corner)
             coordinates[f"Obstacle_{obstacle_counter}"] = rectangle_corners
             obstacle_counter += 1
@@ -131,19 +145,20 @@ def find_coordinates(contours, color):
             if M["m00"] != 0:
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
-                coordinates["Goal"] = (cX, cY)
+                coordinates["Goal"] = (cX, height - cY)
 
         elif color == 'Blue':
             # Code for blue circles
             (x, y), radius = cv2.minEnclosingCircle(cnt)
-            center = (int(x), int(y))
+            center = (int(x), height - int(y))
             radius = int(radius)
             coordinates[f"Blue_Circle_{blue_circle_counter}"] = (center, radius)
             blue_circle_counter += 1
 
+
     return coordinates
 
-def midpoint_robot(contours):
+def midpoint_robot(contours, height):
     # Filter rectangles and triangles
     red_rectangles = []
     red_triangles = []
@@ -159,10 +174,12 @@ def midpoint_robot(contours):
         # Centroid of the rectangle (square)
         rect = cv2.minAreaRect(red_rectangles[0])
         rect_center = rect[0]
+        rect_center_adjusted = (rect_center[0], height - rect_center[1])
         
         # Centroid of the triangle
         tri = cv2.minEnclosingTriangle(red_triangles[0])[0]
         tri_center = np.mean(tri, axis=0)
+        tri_center_adjusted = (tri_center[0], height - tri_center[1])
         
         # Calculate midpoint between centroids
         midpoint = ((rect_center[0] + tri_center[0]) / 2, (rect_center[1] + tri_center[1]) / 2)
@@ -209,15 +226,15 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
     # Define the coordinates of the map
     # map_coordinates = [(0, 0), (0, 1000), (1000, 1000), (1000, 0)]
 
-    # Blue squares
+    # Blue circles
     blue_coordinates = []
-    blue_coordinates = find_coordinates(blue_contours, 'Blue')
+    blue_coordinates = find_coordinates(blue_contours, 'Blue', height)
     # Green squares
     green_coordinates = []
-    green_coordinates = find_coordinates(green_contours, 'Green')
+    green_coordinates = find_coordinates(green_contours, 'Green', height)
     # Black rectangles
     black_coordinates = []
-    black_coordinates = find_coordinates(black_contours, 'Black')
+    black_coordinates = find_coordinates(black_contours, 'Black', height)
     # Red shapes
     # red_coordinates = []
     # red_coordinates = find_coordinates(red_contours, 'Red')
@@ -296,9 +313,6 @@ def capture_data(camera_index, num_frames=500):
 
     cap.release()
     return np.array(data)
-
-
-
 
 def calculate_covariance_matrix(data):
     return np.cov(data.T)
