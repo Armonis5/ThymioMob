@@ -71,59 +71,59 @@ def find_coordinates(contours, color):
     coordinates = {}
     obstacle_counter = 1
     blue_circle_counter = 1
-    red_triangle_counter = 1
-    red_square_counter = 1
+    # red_triangle_counter = 1
+    # red_square_counter = 1
 
     for cnt in contours:
         approx = cv2.approxPolyDP(cnt, 0.009 * cv2.arcLength(cnt, True), True)
         
-        if len(approx) == 4:
+        #if len(approx) == 4:
             # Code for rectangles (existing logic)
-            rectangle = cv2.minAreaRect(cnt)
-            box = cv2.boxPoints(rectangle)
-            box = np.intp(box)
-            new_order = np.array([box[1], box[2], box[3], box[0]])
-            box = new_order
+        rectangle = cv2.minAreaRect(cnt)
+        box = cv2.boxPoints(rectangle)
+        box = np.intp(box)
+        new_order = np.array([box[1], box[2], box[3], box[0]])
+        box = new_order
 
-            if color == 'Black':
-                rectangle_corners = []
-                for point in box:
-                    corner = (point[0], point[1])
-                    rectangle_corners.append(corner)
-                coordinates[f"Obstacle_{obstacle_counter}"] = rectangle_corners
-                obstacle_counter += 1
+        if color == 'Black':
+            rectangle_corners = []
+            for point in box:
+                corner = (point[0], point[1])
+                rectangle_corners.append(corner)
+            coordinates[f"Obstacle_{obstacle_counter}"] = rectangle_corners
+            obstacle_counter += 1
 
-            elif color == 'Blue':
-                # Code for blue rectangles
-                M = cv2.moments(cnt)
-                if M["m00"] != 0:
-                    cX = int(M["m10"] / M["m00"])
-                    cY = int(M["m01"] / M["m00"])
-                    coordinates["Position"] = (cX, cY)
-    
-                # Code to check if the red shape is a square
-            if color == 'Red':
-                # To filter out rectangles and keep only squares, we can check if all sides are approximately equal
-                # First, find the width and height of the bounding rectangle
-                width = cv2.norm(approx[0] - approx[1])
-                height = cv2.norm(approx[1] - approx[2])
-                # Check if width and height are similar (you may adjust the tolerance)
-                if abs(width - height) <= max(width, height) * 0.2:  # 20% tolerance
-                    M = cv2.moments(cnt)
-                    if M["m00"] != 0:
-                        cX = int(M["m10"] / M["m00"])
-                        cY = int(M["m01"] / M["m00"])
-                        coordinates[f"Red_Square_{red_square_counter}"] = (cX, cY)
-                        red_square_counter += 1
+        # elif color == 'Blue':
+        #     # Code for blue rectangles
+        #     M = cv2.moments(cnt)
+        #     if M["m00"] != 0:
+        #         cX = int(M["m10"] / M["m00"])
+        #         cY = int(M["m01"] / M["m00"])
+        #         coordinates["Position"] = (cX, cY)
 
-        elif len(approx) == 3 and color == 'Red':
-            # This is a triangle
-            M = cv2.moments(cnt)
-            if M["m00"] != 0:
-                cX = int(M["m10"] / M["m00"])
-                cY = int(M["m01"] / M["m00"])
-                coordinates[f"Red_Triangle_{red_triangle_counter}"] = (cX, cY)
-                red_triangle_counter += 1
+            # Code to check if the red shape is a square
+        # if color == 'Red':
+        #     # To filter out rectangles and keep only squares, we can check if all sides are approximately equal
+        #     # First, find the width and height of the bounding rectangle
+        #     width = cv2.norm(approx[0] - approx[1])
+        #     height = cv2.norm(approx[1] - approx[2])
+        #     # Check if width and height are similar (you may adjust the tolerance)
+        #     if abs(width - height) <= max(width, height) * 0.2:  # 20% tolerance
+        #         M = cv2.moments(cnt)
+        #         if M["m00"] != 0:
+        #             cX = int(M["m10"] / M["m00"])
+        #             cY = int(M["m01"] / M["m00"])
+        #             coordinates[f"Red_Square_{red_square_counter}"] = (cX, cY)
+        #             red_square_counter += 1
+
+    # elif len(approx) == 3 and color == 'Red':
+    #     # This is a triangle
+    #     M = cv2.moments(cnt)
+    #     if M["m00"] != 0:
+    #         cX = int(M["m10"] / M["m00"])
+    #         cY = int(M["m01"] / M["m00"])
+    #         coordinates[f"Red_Triangle_{red_triangle_counter}"] = (cX, cY)
+    #         red_triangle_counter += 1
 
         elif color == 'Green':
             # Code for green goal (existing logic)
@@ -200,7 +200,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
     red_contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 
-    black_contours = black_contours[2:] # Exclude the map contour
+    #ENLEVER# black_contours = black_contours[2:] # Exclude the map contour
     cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red       color for   black   squares
     cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Green    color for   green   squares
     cv2.drawContours(frame, blue_contours, -1, (255, 0, 0), 3);  # Blue    color for   blue    squares
@@ -219,8 +219,8 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
     black_coordinates = []
     black_coordinates = find_coordinates(black_contours, 'Black')
     # Red shapes
-    red_coordinates = []
-    red_coordinates = find_coordinates(red_contours, 'Red')
+    # red_coordinates = []
+    # red_coordinates = find_coordinates(red_contours, 'Red')
 
     match mode:
         case 'blue':
@@ -239,7 +239,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
             print('Invalid mode')
             frame = frame
 
-    return frame, blue_coordinates, green_coordinates, black_coordinates, red_coordinates
+    return frame, blue_coordinates, green_coordinates, black_coordinates
 
 # Check if the camera is hidden (i.e. if the mask detecting the black squares is empty)
 def is_camera_hidden(black_mask):
