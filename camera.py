@@ -71,6 +71,8 @@ def find_coordinates(contours, color):
     coordinates = {}
     obstacle_counter = 1
     blue_circle_counter = 1
+    red_triangle_counter = 1
+    red_square_counter = 1
 
     for cnt in contours:
         approx = cv2.approxPolyDP(cnt, 0.009 * cv2.arcLength(cnt, True), True)
