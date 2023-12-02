@@ -13,8 +13,8 @@ RED_RGB = np.array([255, 0, 0], dtype=np.uint8)
 
 
 ### Based parameters for the color detection
-COLOR_THREASHOLD = 20
-SATURATION_THRESHOLD = 130
+COLOR_THRESHOLD = 20
+SATURATION_THRESHOLD = 100
 BRIGHTNESS_THRESHOLD = 60
 
 
@@ -61,9 +61,9 @@ def hsv_range(base_color, color_threashold,saturation_threshold, brightness_thre
 
     return lower, upper
 
-def compute_dimensions(blue_coordinates):
+def compute_dimensions(blue_coordinates,old_height=0):
     if len(blue_coordinates) != 4:
-        return "Error: Input should contain coordinates of 4 circles"
+        return 0,old_height
 
     min_x = min(y[0] for circle in blue_coordinates for y in circle)
     max_x = max(y[0] for circle in blue_coordinates for y in circle)
@@ -81,7 +81,7 @@ def black_range_hsv(brightness_threshold):
     upper = np.array([360, 255, brightness_threshold-1])
     return lower, upper
 
-def find_coordinates(contours, color):
+def find_coordinates(contours, color, height=0):
     coordinates = {}
     obstacle_counter = 1
     blue_circle_counter = 1
@@ -150,7 +150,7 @@ def find_coordinates(contours, color):
         elif color == 'Blue':
             # Code for blue circles
             (x, y), radius = cv2.minEnclosingCircle(cnt)
-            center = (int(x), height - int(y))
+            center = (int(x), int(y))
             radius = int(radius)
             coordinates[f"Blue_Circle_{blue_circle_counter}"] = (center, radius)
             blue_circle_counter += 1
@@ -188,7 +188,7 @@ def midpoint_robot(contours, height):
     
     return None, None, None  # Return None if shapes are not found or condition not met
 
-def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD):
+def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD,height=0):
     match color_type:
         case 'BGR':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -216,8 +216,6 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
     black_contours, _ = cv2.findContours(black_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     red_contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-
-    #ENLEVER# black_contours = black_contours[2:] # Exclude the map contour
     cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red       color for   black   squares
     cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Green    color for   green   squares
     cv2.drawContours(frame, blue_contours, -1, (255, 0, 0), 3);  # Blue    color for   blue    squares
@@ -228,16 +226,30 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
 
     # Blue circles
     blue_coordinates = []
-    blue_coordinates = find_coordinates(blue_contours, 'Blue', height)
+    if blue_contours is not None:
+        blue_coordinates = find_coordinates(blue_contours, 'Blue')
+        height = compute_dimensions(blue_coordinates,height)[1]    
+
     # Green squares
     green_coordinates = []
-    green_coordinates = find_coordinates(green_contours, 'Green', height)
+    if green_contours is not None and height != 0:
+        green_coordinates = find_coordinates(green_contours, 'Green',height)
     # Black rectangles
     black_coordinates = []
-    black_coordinates = find_coordinates(black_contours, 'Black', height)
-    # Red shapes
-    # red_coordinates = []
-    # red_coordinates = find_coordinates(red_contours, 'Red')
+    if black_contours is not None and   height != 0:
+        black_coordinates = find_coordinates(black_contours, 'Black',height)
+    
+    midpoints = [None, None, None]
+    if red_contours is not None and height != 0:
+        midpoints = midpoint_robot(red_contours, height)
+
+    if midpoints is not None and midpoints[0] is not None and midpoints[1] is not None and midpoints[2] is not None:
+        angle_robot = robot_angle(midpoints[0], midpoints[1])
+        robot_midpoint = midpoints[2]
+    else:
+        angle_robot = None
+        robot_midpoint = None
+
 
     match mode:
         case 'blue':
@@ -256,7 +268,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
             print('Invalid mode')
             frame = frame
 
-    return frame, blue_coordinates, green_coordinates, black_coordinates
+    return frame, robot_midpoint,angle_robot, green_coordinates, black_coordinates, blue_coordinates,height
 
 # Check if the camera is hidden (i.e. if the mask detecting the black squares is empty)
 def is_camera_hidden(black_mask):
