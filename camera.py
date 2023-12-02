@@ -222,6 +222,9 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
     red_coordinates = []
     red_coordinates = find_coordinates(red_contours, 'Red')
 
+    robot_midpoint = midpoint_robot(red_contours)
+    robot_angle =
+
     match mode:
         case 'blue':
             frame = blue_mask
@@ -239,7 +242,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THREASHOLD,saturation
             print('Invalid mode')
             frame = frame
 
-    return frame, blue_coordinates, green_coordinates, black_coordinates, red_coordinates
+    return frame, robot_midpoint,robot_angle, green_coordinates, black_coordinates, blue_coordinates
 
 # Check if the camera is hidden (i.e. if the mask detecting the black squares is empty)
 def is_camera_hidden(black_mask):
