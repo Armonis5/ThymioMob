@@ -3,11 +3,13 @@ import cv2
 import time
 import vision_utils as utils
 import matplotlib.colors as colors
+import math
 
 
 GREEN_RGB = np.array([0, 255, 0], dtype=np.uint8)
 BLUE_RGB = np.array([0, 0, 255], dtype=np.uint8)
 BLACK_RGB = np.array([0, 0, 0], dtype=np.uint8)
+RED_RGB = np.array([255, 0, 0], dtype=np.uint8) 
 
 
 ### Based parameters for the color detection
