@@ -5,6 +5,21 @@ import math
 
 ############################################################################################################
 
+def create_dictionnary(objects):
+    object_dict = {}
+
+    for i, obj_list in enumerate(objects):
+        if len(obj_list) == 4:
+            object_dict[f'object_{i+1}'] = obj_list
+    return object_dict
+
+def create_RandG_dict(robot, goal):
+    RandG = {
+        'robot': robot,
+        'goal': goal
+    }
+    return RandG
+
 def get_delta(p1, p2, size_robot):
     alpha = math.atan2((p1[1]-p2[1]),(p1[0]-p2[0]))
     deltax= abs(size_robot*math.cos(alpha))
@@ -182,8 +197,8 @@ def object_ptsname(object_edges):
     return point_names
 
 
-def is_connected(point1, point2, object_edges, SandG):
-    point_names = name2coord(object_edges, SandG)
+def is_connected(point1, point2, object_edges, RandG):
+    point_names = name2coord(object_edges, RandG)
     coordinate_to_name = {v: k for k, v in point_names.items()}
     point_objects = object_ptsname(object_edges)
     
@@ -200,46 +215,42 @@ def is_connected(point1, point2, object_edges, SandG):
                 return True
             return False
         
-    #We go through all abject and check if the line between point1 and point2 
+    #We go through all object and check if the line between point1 and point2 
     #intersect with any of the vertices of an object
     for object, points in object_edges.items():
-        #print("object: ", object)
         for j in range(len(points)):
-            #print("j= ", j)
-            #print("len(points) = ", len(points))
             if j == (len(points) - 1):
-                #print("point",coordinate_to_name[points[j]])
                 if intersect(point1, point2, points[j], points[0]):
                     return False
-                #print("no intersection")
             else:
                 if points[j] == point1 or points[j+1] == point2:
-                    #print("continue: ", coordinate_to_name[point1], coordinate_to_name[point2], coordinate_to_name[points[j]], coordinate_to_name[points[j+1]])
                     continue
                     
                 else:
                     if intersect(point1, point2, points[j], points[j + 1]):
-                        #print("intersection between",coordinate_to_name[point1],coordinate_to_name[point2], " and ", coordinate_to_name[points[j]],coordinate_to_name[points[j+1]])
                         return False
     return True
 
-def generate_adjacency_list(object_edges, SandG):
-    point_names = name2coord(object_edges, SandG)
+#Creates a dictionnary with point name as key associated to a list of points names connected to it
+def generate_adjacency_list(object_edges, RandG):
+    point_names = name2coord(object_edges, RandG)
     adjacency_list = {}
 
     for P1, coord1 in point_names.items():
         adjacency_list[P1] = []
         for P2, coord2 in point_names.items():
             if P1 != P2:
-                if is_connected(coord1, coord2, object_edges, SandG):
+                if is_connected(coord1, coord2, object_edges, RandG):
                     adjacency_list[P1].append(P2)
     return adjacency_list
 
 from math import sqrt
 
+#Eucledian distance
 def compute_dist(point1, point2):
     return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
 
+#Creates a dictionnary with 2 connected points as key associated with their distance
 def calculate_distances(adjacency_list, point_names):
     distances = {}  # Dictionary to store distances between connected points
 
@@ -250,7 +261,7 @@ def calculate_distances(adjacency_list, point_names):
             
             # Store the distance in the distances dictionary
             distances[(point, connected_point)] = distance
-            distances[(connected_point, point)] = distance  # Assuming distances are bidirectional
+            distances[(connected_point, point)] = distance
     
     return distances
 
@@ -269,7 +280,7 @@ def dijkstra(adjacency_list, point_names):
     infinity = 10e10
     for node in point_names.keys():
         shortest_dist[node] = infinity
-        shortest_dist['R'] = 0
+    shortest_dist['R'] = 0
 
     while unvisited_nodes:
         current_min_node = unvisited_nodes[0]
@@ -286,12 +297,12 @@ def dijkstra(adjacency_list, point_names):
                 previous_nodes[neighbor] = current_min_node
         unvisited_nodes.remove(current_min_node)
 
-    return previous_nodes, shortest_dist
+    return previous_nodes
 
 
 def find_path(adjacency_list, point_names):
     dist = 0
-    previous_nodes, shortest_dist = dijkstra(adjacency_list, point_names)
+    previous_nodes = dijkstra(adjacency_list, point_names)
     path = ['G']
     current_node = 'G'
     while current_node != 'R':
@@ -300,32 +311,3 @@ def find_path(adjacency_list, point_names):
     path.reverse()
     return path
 
-#############################################################################################################
-
-# # Generate random objects with random points and add them to the object_edges dictionary
-
-# object_corners = {
-#     'Quadrilateral_1': [(53, 107), (107, 107), (107, 53), (53, 53)],
-#     'Quadrilateral_2': [(183, 217), (237, 217), (207, 163), (183, 163)],
-#     'Quadrilateral_3': [(243, 87), (297, 87), (297, 33), (243, 33)]
-# }
-
-# SandG = {
-# "robot" : (50,15),
-# "goal" : (144, 139)
-# }
-# robot_size = 23
-
-# expended_corners = grow_obstacles(object_corners, robot_size)
-# points_name2coord = name2coord(expended_corners, SandG)
-# adjacent_list = generate_adjacency_list(expended_corners, SandG)
-# distances = calculate_distances(adjacent_list, points_name2coord)
-# shortest_path = find_path(adjacent_list, points_name2coord)
-
-
-# path = []
-# for name in shortest_path:
-#     path.append(points_name2coord[name])
-
-# print("shortest_path: ", shortest_path)
-# print("coordinates: ", path)
