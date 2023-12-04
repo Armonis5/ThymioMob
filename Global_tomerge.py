@@ -7,7 +7,6 @@ import math
 
 def create_dictionnary(objects):
     object_dict = {}
-
     for i, pts_list in enumerate(objects):
         if len(pts_list) == 4:
             object_dict[f'object_{i+1}'] = pts_list
