@@ -13,7 +13,7 @@ def plot_expended_obstacles(object_corners, SandG, expended_corners):
     point_names2.pop('G', None)
     plt.figure(figsize=(8, 8))
 
-    # Merge both dictionaries while skipping the 'R' and 'G' keys
+    # Merge both dictionaries and skips  'R' and 'G' 
     i = 0
     for pt, coord in point_names2.items():
         point_names[f"P{i}_init"] = coord
@@ -115,7 +115,7 @@ def plot_visibility_graph(adjacency_list, point_names):
 
 def plot_graph_with_shapes(adjacent_list, point_names, distances, shortest_path, object_edges):
     plt.figure(figsize=(8, 8))
-
+     
     # Plotting all points and their names
     for point, coordinates in point_names.items():
         plt.scatter(coordinates[0], coordinates[1], color='blue', s=100)
@@ -172,4 +172,3 @@ def plot_graph_with_shapes(adjacent_list, point_names, distances, shortest_path,
 
     # Show plot
     plt.show()
-
