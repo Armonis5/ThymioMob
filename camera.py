@@ -14,8 +14,8 @@ RED_RGB = np.array([255, 0, 0], dtype=np.uint8)
 
 ### Based parameters for the color detection
 COLOR_THRESHOLD = 20
-SATURATION_THRESHOLD = 100
-BRIGHTNESS_THRESHOLD = 60
+SATURATION_THRESHOLD = 80
+BRIGHTNESS_THRESHOLD = 80
 
 
 # GREEN_HSV_LOWER = np.array([35, 80, 80])
@@ -195,6 +195,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
         case _:
             frame = frame
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    filtered_hsv = cv2.bilateralFilter(hsv, 9, 80, 80) #VALEURS # ENLEVER #
 
     green_lower, green_upper = hsv_range(GREEN_RGB, color_threashold, saturation_threshold, brightness_threshold)
     blue_lower, blue_upper = hsv_range(BLUE_RGB, color_threashold, saturation_threshold, brightness_threshold)
@@ -202,13 +203,13 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     red_lower, red_upper = hsv_range(RED_RGB, color_threashold, saturation_threshold, brightness_threshold)
 
     # Define color ranges for green squares
-    green_mask = cv2.inRange(hsv, green_lower, green_upper)
+    green_mask = cv2.inRange(filtered_hsv, green_lower, green_upper)
     # Define color ranges for blue squares
-    blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
+    blue_mask = cv2.inRange(filtered_hsv, blue_lower, blue_upper)
     # Define color ranges for black squares or rectangles
-    black_mask = cv2.inRange(hsv, black_lower, black_upper)
+    black_mask = cv2.inRange(filtered_hsv, black_lower, black_upper)
     # Define color ranges for red shapes
-    red_mask = cv2.inRange(hsv, red_lower, red_upper)
+    red_mask = cv2.inRange(filtered_hsv, red_lower, red_upper)
 
     # Find contours for each colour
     green_contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
