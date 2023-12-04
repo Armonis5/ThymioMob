@@ -37,12 +37,12 @@ def grow_obstacles(start_obj, size_robot):
             x2, y2 = points[i+2]
 
             #first point on top left from second point
-            if (x1<x2 and y1>y2):
+            if (x2<x1 and y1>y2):
                 p1=(x1,y1)
                 p2=(x2,y2)
                 case=1
             #second point on top left from first point
-            elif (x1>x2 and y1<y2):
+            elif (x2<x1 and y2>y1):
                 p1=(x2,y2)
                 p2=(x1,y1)
                 case=1
