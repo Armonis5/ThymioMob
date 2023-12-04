@@ -8,9 +8,9 @@ import math
 def create_dictionnary(objects):
     object_dict = {}
 
-    for i, obj_list in enumerate(objects):
-        if len(obj_list) == 4:
-            object_dict[f'object_{i+1}'] = obj_list
+    for i, pts_list in enumerate(objects):
+        if len(pts_list) == 4:
+            object_dict[f'object_{i+1}'] = pts_list
     return object_dict
 
 def create_RandG_dict(robot, goal):
@@ -199,7 +199,6 @@ def object_ptsname(object_edges):
 
 def is_connected(point1, point2, object_edges, RandG):
     point_names = name2coord(object_edges, RandG)
-    print(point_names)
     coordinate_to_name = {v: k for k, v in point_names.items()}
     point_objects = object_ptsname(object_edges)
     
