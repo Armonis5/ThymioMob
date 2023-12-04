@@ -37,12 +37,12 @@ def grow_obstacles(start_obj, size_robot):
             x2, y2 = points[i+2]
 
             #first point on top left from second point
-            if (x2<x1 and y1>y2):
+            if (x1<x2 and y1>y2):
                 p1=(x1,y1)
                 p2=(x2,y2)
                 case=1
             #second point on top left from first point
-            elif (x1<x2 and y2>y1):
+            elif (x2<x1 and y2>y1):
                 p1=(x2,y2)
                 p2=(x1,y1)
                 case=1
@@ -199,6 +199,7 @@ def object_ptsname(object_edges):
 
 def is_connected(point1, point2, object_edges, RandG):
     point_names = name2coord(object_edges, RandG)
+    print(point_names)
     coordinate_to_name = {v: k for k, v in point_names.items()}
     point_objects = object_ptsname(object_edges)
     
