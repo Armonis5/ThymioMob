@@ -72,7 +72,6 @@ def compute_dimensions(blue_coordinates,old_height=0,old_origin=(0,0)):
     width = max_x - min_x
     height = max_y - min_y
     origin = (max_x, max_y)
-    print(height)
     return width, height, origin
 
 
@@ -218,13 +217,21 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
 
     # Find contours for each colour
     green_contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #Only countours with area greater than 1000
+    green_contours = [cnt for cnt in green_contours if cv2.contourArea(cnt) > 1000]
     blue_contours, _ = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #Only countours with area greater than 1000
+    blue_contours = [cnt for cnt in blue_contours if cv2.contourArea(cnt) > 200]
     black_contours, _ = cv2.findContours(black_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #Only countours with area greater than 1000
+    black_contours = [cnt for cnt in black_contours if cv2.contourArea(cnt) > 1000]
+    #Only countours with area greater than 1000
     red_contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    red_contours = [cnt for cnt in red_contours if cv2.contourArea(cnt) > 200]
 
     cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red       color for   black   squares
     cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Green    color for   green   squares
-    cv2.drawContours(frame, blue_contours, -1, (255, 0, 0), 3);  # Blue    color for   blue    squares
+    cv2.drawContours(frame, blue_contours, -1, (0, 255, 255), 3);  # Yellow    color for   blue    squares
     cv2.drawContours(frame, red_contours, -1, (0, 0, 0), 3);  # Black    color for   red    squares
 
     # Define the coordinates of the map
@@ -253,7 +260,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     
     midpoints = [None, None, None]
     if red_contours is not None and height != 0:
-        midpoints = midpoint_robot(red_contours, height)
+        midpoints = midpoint_robot(red_contours, height,origin)
 
     if midpoints is not None and midpoints[0] is not None and midpoints[1] is not None and midpoints[2] is not None:
         angle_robot = robot_angle(midpoints[0], midpoints[1])
@@ -267,6 +274,9 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
         if coor != None:
             cv2.circle(frame, (int(coor[0]), int(coor[1])), 5, (255, 0, 255))
         
+    if len(green_coordinates)>0:
+        green_coordinates = green_coordinates[0]
+
 
     match mode:
         case 'blue':
