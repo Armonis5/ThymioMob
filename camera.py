@@ -6,10 +6,10 @@ import matplotlib.colors as colors
 import math
 
 
-GREEN_RGB = np.array([0, 255, 0], dtype=np.uint8)
-BLUE_RGB = np.array([0, 0, 255], dtype=np.uint8)
-BLACK_RGB = np.array([0, 0, 0], dtype=np.uint8)
-RED_RGB = np.array([255, 0, 0], dtype=np.uint8) 
+GREEN_BGR = np.uint8([[[0, 255, 0]]])
+BLUE_BGR = np.uint8([[[255, 0, 0]]])
+BLACK_BGR = np.uint8([[[0, 0, 0]]])
+RED_BGR = np.uint8([[[0, 0, 255]]])
 
 
 ### Based parameters for the color detection
@@ -27,12 +27,9 @@ BRIGHTNESS_THRESHOLD = 60
 
 
 def color_to_hsv(color):
-    color = color/255
-    hsv = colors.rgb_to_hsv(color)
-    hsv[0] = hsv[0]*180
-    hsv[1] = hsv[1]*255
-    hsv[2] = hsv[2]*255
-    return hsv.astype(np.uint8)
+    hsv_color = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
+    return hsv_color
+    
 
 # Calculate the saturation of each rgb channel and return the average, knowing that the image is in HSV format
 def image_saturation(image):
@@ -43,21 +40,25 @@ def hsv_range(base_color, color_threashold,saturation_threshold, brightness_thre
     # Convert base color to HSV
     hsv_base_color = color_to_hsv(base_color)
     # Extract hue, saturation and value from base color
-    h, s, v = hsv_base_color[0], hsv_base_color[1], hsv_base_color[2]
-    # Define lower and upper bounds for hue
-    lower_hue = h - color_threashold
-    upper_hue = h + color_threashold
-    if lower_hue < 0:
-        lower_hue = 180 + lower_hue
-    if upper_hue > 180:
-        upper_hue = upper_hue - 180
+    lower = hsv_base_color[0][0][0] - color_threashold, saturation_threshold, brightness_threshold
+    upper = hsv_base_color[0][0][0] + color_threashold, 255, 255
+    if lower[0] < 0:
+        lower = 0, lower[1], lower[2]
+    if upper[0] > 360:
+        upper = 360, upper[1], upper[2]
+    
+    if lower[1] <0:
+        lower = lower[0], 0, lower[2]
+    if upper[1] >255:
+        upper = upper[0], 255, upper[2]
 
-    if lower_hue > upper_hue:
-        tmp = lower_hue
-        lower_hue = upper_hue
-        upper_hue = tmp
-    lower = np.array([lower_hue, saturation_threshold, brightness_threshold])
-    upper = np.array([upper_hue, 255, 255])
+    if lower[2] <0:
+        lower = lower[0], lower[1], 0
+    if upper[2] >255:
+        upper = upper[0], upper[1], 255
+
+    lower = np.array(lower)
+    upper = np.array(upper)
 
     return lower, upper
 
@@ -196,10 +197,10 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
             frame = frame
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    green_lower, green_upper = hsv_range(GREEN_RGB, color_threashold, saturation_threshold, brightness_threshold)
-    blue_lower, blue_upper = hsv_range(BLUE_RGB, color_threashold, saturation_threshold, brightness_threshold)
+    green_lower, green_upper = hsv_range(GREEN_BGR, color_threashold, saturation_threshold, brightness_threshold)
+    blue_lower, blue_upper = hsv_range(BLUE_BGR, color_threashold, saturation_threshold, brightness_threshold)
     black_lower, black_upper = black_range_hsv(brightness_threshold-1)
-    red_lower, red_upper = hsv_range(RED_RGB, color_threashold, saturation_threshold, brightness_threshold)
+    red_lower, red_upper = hsv_range(RED_BGR, color_threashold, saturation_threshold, brightness_threshold)
 
     # Define color ranges for green squares
     green_mask = cv2.inRange(hsv, green_lower, green_upper)
