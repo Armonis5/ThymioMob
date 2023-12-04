@@ -72,7 +72,7 @@ def compute_dimensions(blue_coordinates,old_height=0,old_origin=(0,0)):
     width = max_x - min_x
     height = max_y - min_y
     origin = (max_x, max_y)
-
+    print(height)
     return width, height, origin
 
 
@@ -81,7 +81,7 @@ def black_range_hsv(brightness_threshold):
     upper = np.array([360, 255, brightness_threshold-1])
     return lower, upper
 
-def find_coordinates(contours, color, height=0,origin=(0,0)):
+def find_coordinates(contours, color,width=0, height=0,origin=(0,0)):
     coordinates = []
     obstacle_counter = 0
     blue_circle_counter = 0
@@ -102,8 +102,11 @@ def find_coordinates(contours, color, height=0,origin=(0,0)):
             for point in box:
                 corner = (point[0], point[1])
                 corner = coordinate_to_IRL(corner,height,origin)
+                if not coordinate_in_map(corner,width,height):
+                    break
                 rectangle_corners.append(corner)
-            coordinates.append(rectangle_corners)
+            if rectangle_corners != []:
+                coordinates.append(rectangle_corners)
         # elif color == 'Blue':
         #     # Code for blue rectangles
         #     M = cv2.moments(cnt)
@@ -143,7 +146,8 @@ def find_coordinates(contours, color, height=0,origin=(0,0)):
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
                 coor = coordinate_to_IRL((cX,cY),height,origin)
-                coordinates.append(coor)
+                if coordinate_in_map(coor,width,height):
+                    coordinates.append(coor)
 
         elif color == 'Blue':
             # Code for blue circles
@@ -189,7 +193,7 @@ def midpoint_robot(contours, height,origin=(0,0)):
     
     return None, None, None  # Return None if shapes are not found or condition not met
 
-def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD,height=100,origin=(0,0)):
+def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_threshold=SATURATION_THRESHOLD,brightness_threshold=BRIGHTNESS_THRESHOLD,width=75,height=100,origin=(0,0)):
     match color_type:
         case 'BGR':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -226,10 +230,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     # Define the coordinates of the map
     # map_coordinates = [(0, 0), (0, 1000), (1000, 1000), (1000, 0)]
 
-     # Green squares
-    green_coordinates = []
-    if green_contours is not None and height != 0:
-        green_coordinates = find_coordinates(green_contours, 'Green',height,origin)
+
     # Blue circles
     blue_coordinates = []
     if blue_contours is not None:
@@ -237,13 +238,18 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
         width, height,origin = compute_dimensions(blue_coordinates,height,origin)
         height = max(height,width)
         cv2.circle(frame, origin, 5, (0, 255, 255))
-            
+
+    
+    # Green squares
+    green_coordinates = []
+    if green_contours is not None and height != 0:
+        green_coordinates = find_coordinates(green_contours, 'Green',width,height,origin)         
 
    
     # Black rectangles
     black_coordinates = []
     if black_contours is not None and   height != 0:
-        black_coordinates = find_coordinates(black_contours, 'Black',height,origin)
+        black_coordinates = find_coordinates(black_contours, 'Black',width,height,origin)
     
     midpoints = [None, None, None]
     if red_contours is not None and height != 0:
@@ -312,13 +318,17 @@ def robot_angle(square_centroid, triangle_centroid):
 
     # Calculate angle using arctan2
     angle_rad = math.atan2(vec[1], vec[0])
-    angle_deg = math.degrees(angle_rad)
     # Ensure angle is between 0 and 360 degrees
     # if angle_deg < 0:
     #     angle_deg += 360
 
-    return angle_deg
+    return angle_rad
 
+def coordinate_in_map(coordinate,width,height):
+    if coordinate[0] < 0 or coordinate[0] > width or coordinate[1] < 0 or coordinate[1] > height:
+        return False
+    else:
+        return True
 
 def zoom_frame(frame, zoom_factor=2):
     height, width = frame.shape[:2]

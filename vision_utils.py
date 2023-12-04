@@ -23,12 +23,10 @@ def draw_path(frame, start_point,end_point, path_points, color=(255, 0, 0), thic
         cv2.line(frame, path_points[i], path_points[i + 1], color, thickness)
     cv2.line(frame, path_points[-1], end_point, color, thickness)
 
-def frame_draw(frame, robot_position, path_points, start_point, end_point):
-    draw_path(frame, start_point,end_point,path_points, PATH_COLOR)
+def frame_draw(frame, robot_position, path_points, end_point):
+    draw_path(frame, robot_position,end_point,path_points, PATH_COLOR)
     draw_points(frame, path_points, POINT_COLOR)
-    draw_point(frame, start_point, START_COLOR)
     draw_point(frame, end_point, END_COLOR)
-    draw_arrow(frame, robot_position[0],robot_position[1],ROBOT_COLOR)
 
 def on_trackbar(val, threshold, index):
     threshold[index] = val
