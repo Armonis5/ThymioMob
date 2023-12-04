@@ -14,8 +14,8 @@ RED_BGR = np.uint8([[[0, 0, 255]]])
 
 ### Based parameters for the color detection
 COLOR_THRESHOLD = 20
-SATURATION_THRESHOLD = 100
-BRIGHTNESS_THRESHOLD = 60
+SATURATION_THRESHOLD = 110
+BRIGHTNESS_THRESHOLD = 70
 
 
 # GREEN_HSV_LOWER = np.array([35, 80, 80])
@@ -83,15 +83,13 @@ def black_range_hsv(brightness_threshold):
     return lower, upper
 
 def find_coordinates(contours, color, height=0):
-    coordinates = {}
-    obstacle_counter = 1
-    blue_circle_counter = 1
+    coordinates = []
+    obstacle_counter = 0
+    blue_circle_counter = 0
     # red_triangle_counter = 1
     # red_square_counter = 1
-
     for cnt in contours:
         approx = cv2.approxPolyDP(cnt, 0.009 * cv2.arcLength(cnt, True), True)
-        
         #if len(approx) == 4:
             # Code for rectangles (existing logic)
         rectangle = cv2.minAreaRect(cnt)
@@ -105,9 +103,7 @@ def find_coordinates(contours, color, height=0):
             for point in box:
                 corner = (point[0], height - point[1])
                 rectangle_corners.append(corner)
-            coordinates[f"Obstacle_{obstacle_counter}"] = rectangle_corners
-            obstacle_counter += 1
-
+            coordinates.append(rectangle_corners)
         # elif color == 'Blue':
         #     # Code for blue rectangles
         #     M = cv2.moments(cnt)
@@ -146,16 +142,15 @@ def find_coordinates(contours, color, height=0):
             if M["m00"] != 0:
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
-                coordinates["Goal"] = (cX, height - cY)
+                coordinates.append((cX, height - cY))
 
         elif color == 'Blue':
             # Code for blue circles
             (x, y), radius = cv2.minEnclosingCircle(cnt)
             center = (int(x), int(y))
             radius = int(radius)
-            coordinates[f"Blue_Circle_{blue_circle_counter}"] = (center, radius)
-            blue_circle_counter += 1
-
+            if radius >5:
+                coordinates.append((center, radius))
 
     return coordinates
 
@@ -196,6 +191,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
         case _:
             frame = frame
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    hsv_filtered = cv2.bilateralFilter(hsv,9, 80, 80)
 
     green_lower, green_upper = hsv_range(GREEN_BGR, color_threashold, saturation_threshold, brightness_threshold)
     blue_lower, blue_upper = hsv_range(BLUE_BGR, color_threashold, saturation_threshold, brightness_threshold)
@@ -203,13 +199,13 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     red_lower, red_upper = hsv_range(RED_BGR, color_threashold, saturation_threshold, brightness_threshold)
 
     # Define color ranges for green squares
-    green_mask = cv2.inRange(hsv, green_lower, green_upper)
+    green_mask = cv2.inRange(hsv_filtered, green_lower, green_upper)
     # Define color ranges for blue squares
-    blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
+    blue_mask = cv2.inRange(hsv_filtered, blue_lower, blue_upper)
     # Define color ranges for black squares or rectangles
-    black_mask = cv2.inRange(hsv, black_lower, black_upper)
+    black_mask = cv2.inRange(hsv_filtered, black_lower, black_upper)
     # Define color ranges for red shapes
-    red_mask = cv2.inRange(hsv, red_lower, red_upper)
+    red_mask = cv2.inRange(hsv_filtered, red_lower, red_upper)
 
     # Find contours for each colour
     green_contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -225,16 +221,17 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     # Define the coordinates of the map
     # map_coordinates = [(0, 0), (0, 1000), (1000, 1000), (1000, 0)]
 
+     # Green squares
+    green_coordinates = []
+    if green_contours is not None and height != 0:
+        green_coordinates = find_coordinates(green_contours, 'Green',height)
     # Blue circles
     blue_coordinates = []
     if blue_contours is not None:
         blue_coordinates = find_coordinates(blue_contours, 'Blue')
-        height = compute_dimensions(blue_coordinates,height)[1]    
+        _,height = compute_dimensions(blue_coordinates,height)    
 
-    # Green squares
-    green_coordinates = []
-    if green_contours is not None and height != 0:
-        green_coordinates = find_coordinates(green_contours, 'Green',height)
+   
     # Black rectangles
     black_coordinates = []
     if black_contours is not None and   height != 0:
