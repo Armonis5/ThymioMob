@@ -4,7 +4,10 @@ import math
 #ALL FUNCTIONS
 
 ############################################################################################################
+#Formatage des données de la caméra
 
+#Takes points given by camera and creates a dictionnary with object 
+#name as key associated to a list of points
 def create_dictionnary(objects):
     object_dict = {}
     for i, pts_list in enumerate(objects):
@@ -12,6 +15,8 @@ def create_dictionnary(objects):
             object_dict[f'object_{i+1}'] = pts_list
     return object_dict
 
+#Takes goal and start position coordinates from camera and creates
+#a dictionnary with object
 def create_RandG_dict(robot, goal):
     RandG = {
         'robot': robot,
@@ -19,6 +24,10 @@ def create_RandG_dict(robot, goal):
     }
     return RandG
 
+
+#To use in grow_obsracles function
+#It calculates angle between point p1 and p2 and finds the distance
+#we should move the points in x and y
 def get_delta(p1, p2, size_robot):
     alpha = math.atan2((p1[1]-p2[1]),(p1[0]-p2[0]))
     deltax= abs(size_robot*math.cos(alpha))
@@ -144,11 +153,15 @@ def intersect(p1,q1,p2,q2):
     o2=compute_orientation(p1,q1,q2)
     o3=compute_orientation(p2,q2,p1)
     o4=compute_orientation(p2,q2,q1)
-    #If two points are equal 
+
+    #If two points are equal, we return false, they are crossing on that point 
+    #which is not considered here as an intersection.
+    #This situation for points in the same object is handle in is_connected function.
     if p1==p2 or p1==q2 or q1==p2 or q1==q2:
         return False
     
-    # General case
+    # General case: If orientation of point 1 and 2 are different 
+    # and orientation of point 3 and 4 are different, then the points intersect
     if o1 != o2 and o3 != o4:
         return True
     
@@ -206,8 +219,10 @@ def is_connected(point1, point2, object_edges, RandG):
     P2= coordinate_to_name[point2] #P2 is the name of the point2
     for object, points in point_objects.items():
         if P1 in points and P2 in points:
+            #If the points are adjacent, return true
             if abs(points.index(P1)-points.index(P2))==1:
                 return True
+            #If points are adjacent with one at the end and the other at the beginning of the list
             if points.index(P1)==len(points)-1 and points.index(P2)==0:
                 return True
             if points.index(P2)==len(points)-1 and points.index(P1)==0:
