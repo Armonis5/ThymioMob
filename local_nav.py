@@ -56,12 +56,12 @@ def turn_to_target(pos_1, pos_2, thymio_angle): #turn towards the target when th
     return angle_diff
 
 
-def go_to_target(pos_1, pos_2, thymio_angle, angle_gain = 10):#code to bring Thymio back to the right direction
+def go_to_target(pos_1, pos_2, thymio_angle, angle_gain = 1):#code to bring Thymio back to the right direction
     global motor_left_target, motor_right_target
     thymio_angle = thymio_angle/math.pi*180
     x_dist = pos_2[0] - pos_1[0]
     y_dist = pos_2[1] - pos_1[1]
-    global_distance = x_dist**2 + y_dist**2
+    global_distance = math.sqrt(x_dist**2 + y_dist**2)
     target_angle = math.atan2(y_dist, x_dist)/math.pi*180
     angle_diff = (target_angle - thymio_angle + 180) % 360 - 180  
     control_angle = angle_gain * angle_diff
@@ -69,15 +69,15 @@ def go_to_target(pos_1, pos_2, thymio_angle, angle_gain = 10):#code to bring Thy
     if abs(angle_diff) > 90:
         coef_angle = 0
     else:
-        coef_angle = 0.1+90/angle_diff
+        coef_angle = 0.1+10/abs(angle_diff)
 
-    if global_distance > 30:
+    if global_distance > 25:
         coef_distance = 1
     else:
-        coef_distance = 10+50*1/global_distance
+        coef_distance = 10+50/global_distance
 
-    speed_forward = 100 * coef_angle * coef_distance
-    
+    speed_forward = 200 * coef_angle * coef_distance
+
     motor_left_target = math.ceil(speed_forward - control_angle)
     motor_right_target = math.ceil(speed_forward + control_angle)
     
