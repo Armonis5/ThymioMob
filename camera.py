@@ -320,7 +320,7 @@ def IRL_to_coordinate(coordinate,height,origin=(0,0)):
     x = coordinate[0]*factor
     y = coordinate[1]*factor
     coordinate = (origin[1]-y, origin[0]-x)
-    return coordinate   
+    return coordinate       
 
 def robot_angle(square_centroid, triangle_centroid):
     # Calculate vector from square centroid to triangle centroid

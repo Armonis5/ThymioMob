@@ -24,17 +24,10 @@ def draw_path(frame, start_point,end_point, path_points, color=(255, 0, 0), thic
     cv2.line(frame, path_points[-1], end_point, color, thickness)
 
 def frame_draw(frame, robot_position, path_points, end_point):
-    draw_path(frame, robot_position,end_point,path_points, PATH_COLOR)
+    draw_point(frame, robot_position, ROBOT_COLOR)
+    draw_path(frame, path_points[0],end_point,path_points, PATH_COLOR)
     draw_points(frame, path_points, POINT_COLOR)
     draw_point(frame, end_point, END_COLOR)
 
 def on_trackbar(val, threshold, index):
     threshold[index] = val
-
-    # color_threshold = cv2.getTrackbarPos('Color Threshold', 'Camera Vision')
-    # saturation_threshold = cv2.getTrackbarPos('Saturation Threshold', 'Camera Vision')
-    # brightness_threshold = cv2.getTrackbarPos('Brightness Threshold', 'Camera Vision')
-    
-    # color_threshold = threshold[0]
-    # saturation_threshold = threshold[1]
-    # brightness_threshold = threshold[2]

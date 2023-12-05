@@ -48,11 +48,11 @@ def measure(state, covariance, cam_measurement, measurement_noise, position):
 
 def turn_to_target(pos_1, pos_2, thymio_angle): #turn towards the target when the angle difference is bigger than 10°, since otherwise the path will be inaccurate
     global motor_left_target, motor_right_target
-    thymio_angle = thymio_angle/math.pi*180
+    thymio_angle = 180*thymio_angle/math.pi
     x_dist = pos_2[0] - pos_1[0]
     y_dist = pos_2[1] - pos_1[1]
-    target_angle = math.atan2(y_dist, x_dist)/math.pi*180
-    angle_diff = (target_angle - thymio_angle + 180) % 360 - 180  # result always between -180° and 180°, positive when target angle is greater than thymio angle
+    target_angle = 180*math.atan2(y_dist, x_dist)/math.pi
+    angle_diff = target_angle - thymio_angle   # result always between -180° and 180°, positive when target angle is greater than thymio angle
     return angle_diff
 
 
@@ -62,7 +62,7 @@ def go_to_target(pos_1, pos_2, thymio_angle, angle_gain = 0.85):#code to bring T
     x_dist = pos_2[0] - pos_1[0]
     y_dist = pos_2[1] - pos_1[1]
     target_angle = math.atan2(y_dist, x_dist)/math.pi*180
-    angle_diff = (target_angle - thymio_angle + 180) % 360 - 180  # result always between -180° and 180°, positive when target angle is greater than thymio angle
+    angle_diff = (target_angle - thymio_angle + 180) % 360 - 180  
     control_angle = angle_gain * angle_diff
     motor_left_target = math.ceil(100 - control_angle)
     motor_right_target = math.ceil(100 + control_angle)
