@@ -63,25 +63,36 @@ def go_to_target(pos_1, pos_2, thymio_angle, angle_gain = 1):#code to bring Thym
     y_dist = pos_2[1] - pos_1[1]
     global_distance = math.sqrt(x_dist**2 + y_dist**2)
     target_angle = math.atan2(y_dist, x_dist)/math.pi*180
-    angle_diff = (target_angle - thymio_angle + 180) % 360 - 180  
+    angle_diff = (target_angle - thymio_angle + 180) % 360 - 180 
     control_angle = angle_gain * angle_diff
+    #print("control angle", control_angle)
 
-    if abs(angle_diff) > 90:
+    if abs(angle_diff) > 90: # only turning since the angle difference is too great, no linear motion
         coef_angle = 0
+    elif abs(angle_diff) > 10:
+        coef_angle = 0.1+5/abs(angle_diff) # 0.554 when angle diff = 11, 0.156 when angle diff = 90
     else:
-        coef_angle = 0.1+10/abs(angle_diff)
+        coef_angle = 0.6
 
-    if global_distance > 25:
+    
+    if global_distance > 10:
         coef_distance = 1
     else:
-        coef_distance = 10+50/global_distance
+        coef_distance = 0.1+0.09*global_distance #between 0.1 and 1
 
-    speed_forward = 200 * coef_angle * coef_distance
+    #print("distance", coef_distance)
+    
+    speed_forward =  300* coef_angle * coef_distance # biggest: 230*0.6*1 = 138, smallest around: 230*0.1*0.3 = 7
+    #print("speed forward", speed_forward)
+    
+    motor_left_target = math.ceil(speed_forward - control_angle) # only turning: control angle between 72 and 144
+    motor_right_target = math.ceil(speed_forward + control_angle) # otherwise: 0 to 72
 
-    motor_left_target = math.ceil(speed_forward - control_angle)
-    motor_right_target = math.ceil(speed_forward + control_angle)
+    #print("speed:", motor_left_target, motor_right_target)
     
     return motor_left_target, motor_right_target
+
+
 
 def check_target(state, coordinate, cor):
     if (state[0]>(coordinate[0]+cor) or state[0]<(coordinate[0]-cor)) or (state[1]>(coordinate[1]+cor) or state[1]<(coordinate[1]-cor)):
