@@ -270,7 +270,6 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
 
     if height != None:
         coor = IRL_to_coordinate(robot_midpoint,width,height,origin)
-        print("Robot circle",coor)
         if coor != None:
             cv2.circle(frame, (int(coor[0]), int(coor[1])), 5, (255, 0, 255),5)
         
