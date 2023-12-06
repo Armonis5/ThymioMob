@@ -113,7 +113,7 @@ def plot_visibility_graph(adjacency_list, point_names):
     plt.show()
 
 
-def plot_graph_with_shapes(adjacent_list, point_names, distances, shortest_path, object_edges):
+def plot_graph_with_shapes(adjacent_list, point_names, distances, path, object_edges):
     plt.figure(figsize=(8, 8))
      
     # Plotting all points and their names
@@ -153,9 +153,9 @@ def plot_graph_with_shapes(adjacent_list, point_names, distances, shortest_path,
             plt.fill(x_values, y_values, alpha=0.3)
         
     # Highlighting shortest path in red
-    for i in range(len(shortest_path) - 1):
-        start_point = point_names[shortest_path[i]]
-        end_point = point_names[shortest_path[i + 1]]
+    for i in range(len(path) - 1):
+        start_point = path[i]
+        end_point = path[i + 1]
         plt.plot([start_point[0], end_point[0]], [start_point[1], end_point[1]], 'r-', linewidth=2)
 
 
