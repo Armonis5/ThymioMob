@@ -241,7 +241,25 @@ def is_connected(point1, point2, expended_corners, RandG, object_corners):
 
     #We go through all object and check if the line between point1 and point2 
     #intersect with any of the vertices of an object
-    for object, points in expended_corners.items():
+    if not check_intersection_with_object(point1,point2,expended_corners):
+        return False
+                    
+    #Find weather the robot is inside an grown obstacle
+    inside = False
+    for obj_id, corners in expended_corners.items():
+        if is_point_inside_quad(RandG['robot'], corners):    
+            inside = True
+    
+    #If the robot is inside an expended object, goes through vertices of non expended obstacles 
+    #and connects only to points that don't cross any vertices of non expended obstacles
+    if (P1 == 'R' or P2 == 'R') and inside:
+        return check_intersection_with_object(point1,point2,object_corners)
+    
+    return True
+
+
+def check_intersection_with_object(point1,point2,object_corners):
+    for object, points in object_corners.items():
         for j in range(len(points)):
             if j == (len(points) - 1):
                 #intersection with last vertice
@@ -256,30 +274,7 @@ def is_connected(point1, point2, expended_corners, RandG, object_corners):
                     #intersection with other vertices
                     if intersect(point1, point2, points[j], points[j + 1]):
                         return False
-
-    inside = False
-    for obj_id, corners in expended_corners.items():
-        if is_point_inside_quad(RandG['robot'], corners):    
-            inside = True
-              
-    if (P1 == 'R' or P2 == 'R') and inside:
-        for object, points in object_corners.items():
-            for j in range(len(points)):
-                if j == (len(points) - 1):
-                    #intersection with last vertice
-                    if intersect(point1, point2, points[j], points[0]):
-                        return False
-                else:
-                    #We skip the points if they are equal to point1 or point2
-                    if points[j] == point1 or points[j+1] == point2:
-                        continue
-                        
-                    else:
-                        #intersection with other vertices
-                        if intersect(point1, point2, points[j], points[j + 1]):
-                            return False
     return True
-
 
 
 
@@ -366,6 +361,7 @@ def find_path(adjacency_list, point_names):
     return path
 
 #############################################################################################################
+#Solve problem if robot gets somehow inside an object
 
 def is_point_inside_quad(point, quad_coords):
     x, y = point
