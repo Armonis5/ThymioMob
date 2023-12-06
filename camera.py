@@ -71,23 +71,11 @@ def hsv_range(base_color, color_threashold,saturation_threshold, brightness_thre
 
 def compute_dimensions(blue_coordinates,old_height=0,old_origin=(0,0)):
     if len(blue_coordinates) != 4:
-<<<<<<< HEAD
-        return 0,old_height
-
-        blue_coordinates[0][i]
-
-    min_x = min(y[0] for y in blue_coordinates[0])
-    max_x = max(y[0] for y in blue_coordinates[0])
-    min_y = min(y[1] for y in blue_coordinates[0])
-    max_y = max(y[1] for y in blue_coordinates[0])
-
-=======
         return 0,old_height,old_origin
     min_x = min(blue_coord[0][0] for blue_coord in blue_coordinates)
     max_x = max(blue_coord[0][0] for blue_coord in blue_coordinates)
     min_y = min(blue_coord[0][1] for blue_coord in blue_coordinates)
     max_y = max(blue_coord[0][1] for blue_coord in blue_coordinates)
->>>>>>> 7e96f486f246518642d37fc458b5abe812d1190c
     width = max_x - min_x
     height = max_y - min_y
     origin = (max_x, max_y)
@@ -109,7 +97,7 @@ def black_range_hsv(brightness_threshold):
     upper = np.array([360, 255, brightness_threshold-1])
     return lower, upper
 
-def find_coordinates(contours, color,width=0, height=0,origin=(0,0)):
+def find_coordinates(contours, color,M,width=0, height=0,origin=(0,0)):
     coordinates = []
     obstacle_counter = 0
     blue_circle_counter = 0
@@ -149,12 +137,12 @@ def find_coordinates(contours, color,width=0, height=0,origin=(0,0)):
             (x, y), radius = cv2.minEnclosingCircle(cnt)
             center = (int(x), int(y))
             radius = int(radius)
-            if radius >5 :
+            if radius >5:
                 coordinates.append((center, radius))
 
     return coordinates
 
-def midpoint_robot(contours,width, height,origin=(0,0)):
+def midpoint_robot(contours,width, height,M,origin=(0,0)):
     # Filter rectangles and triangles
     red_rectangles = []
     red_triangles = []
@@ -189,7 +177,7 @@ def midpoint_robot(contours,width, height,origin=(0,0)):
     return None, None, None  # Return None if shapes are not found or condition not met
 
 def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_threshold=SATURATION_THRESHOLD,
-              brightness_threshold=BRIGHTNESS_THRESHOLD,width=75,height=100,origin=(0,0)):
+              brightness_threshold=BRIGHTNESS_THRESHOLD,width=75,height=100,origin=(0,0),M=None):
     match color_type:
         case 'BGR':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -209,7 +197,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     # Blue circles
     blue_coordinates = []
     if blue_contours is not None:
-        blue_coordinates = find_coordinates(blue_contours, 'Blue')
+        blue_coordinates = find_coordinates(blue_contours, 'Blue',M)
         # Wraping of the frame, to make sure the blues circles is always on the corner of the frame
         width, height,origin = compute_dimensions(blue_coordinates,height,origin)
         if height < width:
@@ -265,13 +253,13 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     green_coordinates = []
     midpoints = None
     if green_contours is not None and height != 0 and width != 0:
-        green_coordinates = find_coordinates(green_contours, 'Green',width,height,origin)         
+        green_coordinates = find_coordinates(green_contours, 'Green',M,width,height,origin)         
     # Black rectangles
     black_coordinates = []
     if black_contours is not None and   height != 0 and width != 0:
-        black_coordinates = find_coordinates(black_contours, 'Black',width,height,origin)
+        black_coordinates = find_coordinates(black_contours, 'Black',M,width,height,origin)
     if red_contours is not None and height != 0 and width != 0:
-        midpoints = midpoint_robot(red_contours, width, height,origin)
+        midpoints = midpoint_robot(red_contours, width, height,M,origin)
     
     if midpoints is not None and midpoints[0] is not None and midpoints[1] is not None and midpoints[2] is not None:
         angle_robot = robot_angle(midpoints[0], midpoints[1])
@@ -307,7 +295,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
             frame = frame
 
 
-    return frame, robot_midpoint,angle_robot, green_coordinates, black_coordinates, blue_coordinates,width,height,origin
+    return frame, robot_midpoint,angle_robot, green_coordinates, black_coordinates, blue_coordinates,width,height,origin,M
 
 # Check if the camera is hidden (i.e. if the mask detecting the black squares is empty)
 def is_camera_hidden(black_mask):
