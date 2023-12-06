@@ -318,11 +318,9 @@ def IRL_to_coordinate(coordinate,width,height,origin=(0,0)):
         return None
     h_factor = height/MAP_HEIGHT
     w_factor = width/MAP_WIDTH
-    x = coordinate[0]*h_factor
-    y = coordinate[1]*w_factor
-    print(x,y,"xy")
-    print(origin)
-    coordinate = (origin[1]-y,origin[0]-x)
+    x = coordinate[0]*w_factor
+    y = coordinate[1]*h_factor
+    coordinate = (int(origin[0]-y), int(origin[1]-x))
     return coordinate
 
 def robot_angle(square_centroid, triangle_centroid):
