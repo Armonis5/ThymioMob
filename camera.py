@@ -5,17 +5,23 @@ import vision_utils as utils
 import matplotlib.colors as colors
 import math
 
+MAP_HEIGHT = 100
 
 GREEN_BGR = np.uint8([[[0, 255, 0]]])
 BLUE_BGR = np.uint8([[[255, 0, 0]]])
 BLACK_BGR = np.uint8([[[0, 0, 0]]])
-RED_BGR = np.uint8([[[0, 0, 255     ]]])
+RED_BGR = np.uint8([[[0, 0, 255]]])
 
 
 ### Based parameters for the color detection
 COLOR_THRESHOLD = 20
 SATURATION_THRESHOLD = 110
 BRIGHTNESS_THRESHOLD = 70
+
+CIRCLE_AREA_THRESHOLD = 100
+RECTANGLE_AREA_THRESHOLD = 500
+RED_AREA_THRESHOLD = 50
+
 
 
 # GREEN_HSV_LOWER = np.array([35, 80, 80])
@@ -130,16 +136,19 @@ def midpoint_robot(contours,width, height,origin=(0,0)):
     red_rectangles = []
     red_triangles = []
     for cnt in contours:
-        if cv2.contourArea(cnt) > 100:
-            approx = cv2.approxPolyDP(cnt, 0.08 * cv2.arcLength(cnt, True), True)
+        if cv2.contourArea(cnt) > RED_AREA_THRESHOLD:
+            approx = cv2.approxPolyDP(cnt, 0.09 * cv2.arcLength(cnt, True), True)
             if len(approx) == 4:
+
                     red_rectangles.append(cnt)
                 
             elif len(approx) == 3:
+
                     red_triangles.append(cnt)
     
     # Check if both shapes are found
-    if len(red_rectangles) > 1 and len(red_triangles) > 1:
+    if len(red_rectangles) >= 1 and len(red_triangles) >= 1:
+        
         # Centroid of the rectangle (square)
         rect = cv2.minAreaRect(red_rectangles[0])
         rect_center = rect[0]
@@ -174,7 +183,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     blue_mask = cv2.inRange(hsv_filtered, blue_lower, blue_upper)
     blue_contours, _ = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     #Only countours with area greater than 1000
-    blue_contours = [cnt for cnt in blue_contours if cv2.contourArea(cnt) > 200]
+    blue_contours = [cnt for cnt in blue_contours if cv2.contourArea(cnt) > CIRCLE_AREA_THRESHOLD]
     cv2.drawContours(frame, blue_contours, -1, (0, 255, 255), 3);  # Yellow    color for   blue    squares
     # Blue circles
     blue_coordinates = []
@@ -182,44 +191,49 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
         blue_coordinates = find_coordinates(blue_contours, 'Blue')
         # Wraping of the frame, to make sure the blues circles is always on the corner of the frame
         width, height,origin = compute_dimensions(blue_coordinates,height,origin)
-        height = max(height,width)
+        if height < width:
+            tmp = height
+            height = width
+            width = tmp
         cv2.circle(frame, origin, 5, (0, 255, 255))
         if len(blue_coordinates) == 4:
             # compute the perspective transform matrix and then apply it
             bcoor = [b[0] for b in blue_coordinates]
             src = np.array(bcoor, dtype="float32")
-            dst = np.array([(height,width),(0,width),(height,0),(0,0)], dtype="float32")
+            print(src)
+            dst = np.array([(0,width), (height,width), (0,0), (height,0)], dtype="float32")
             M = cv2.getPerspectiveTransform(src, dst)
-            frame = cv2.warpPerspective(frame, M, (width, height))
-            #Update the coordinates of the blue circles
-            bc = find_coordinates(blue_contours, 'Blue',width,height,origin)
-            width,height,origin = compute_dimensions(bc,height,origin)
-            height = max(height,width)
+            frame = cv2.warpPerspective(frame, M, (height, width))
+            # #Update the coordinates of the blue circles
+            # bc = find_coordinates(blue_contours, 'Blue',width,height,origin)
+            # width,height,origin = compute_dimensions(bc,height,origin)
+            # height = max(height,width)
 
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        hsv_filtered = cv2.bilateralFilter(hsv,9, 80, 80)
 
     green_lower, green_upper = hsv_range(GREEN_BGR, color_threashold, saturation_threshold, brightness_threshold)
     black_lower, black_upper = black_range_hsv(brightness_threshold-1)
     red_lower, red_upper = hsv_range(RED_BGR, color_threashold, saturation_threshold, brightness_threshold)
 
     # Define color ranges for green squares
-    green_mask = cv2.inRange(frame, green_lower, green_upper)
+    green_mask = cv2.inRange(hsv_filtered, green_lower, green_upper)
    
     # Define color ranges for black squares or rectangles
-    black_mask = cv2.inRange(frame, black_lower, black_upper)
+    black_mask = cv2.inRange(hsv_filtered, black_lower, black_upper)
     # Define color ranges for red shapes
-    red_mask = cv2.inRange(frame, red_lower, red_upper)
+    red_mask = cv2.inRange(hsv_filtered, red_lower, red_upper)
 
     # Find contours for each colour
     green_contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     #Only countours with area greater than 1000
-    green_contours = [cnt for cnt in green_contours if cv2.contourArea(cnt) > 1000]
+    green_contours = [cnt for cnt in green_contours if cv2.contourArea(cnt) > RECTANGLE_AREA_THRESHOLD]
     black_contours, _ = cv2.findContours(black_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     #Only countours with area greater than 1000
-    black_contours = [cnt for cnt in black_contours if cv2.contourArea(cnt) > 1000]
+    black_contours = [cnt for cnt in black_contours if cv2.contourArea(cnt) > RECTANGLE_AREA_THRESHOLD]
     #Only countours with area greater than 1000
     red_contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    red_contours = [cnt for cnt in red_contours if cv2.contourArea(cnt) > 200]
-
+    red_contours = [cnt for cnt in red_contours if cv2.contourArea(cnt) > RED_AREA_THRESHOLD]
     cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red       color for   black   squares
     cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Green    color for   green   squares
     cv2.drawContours(frame, red_contours, -1, (0, 0, 0), 3);  # Black    color for   red    squares
@@ -245,6 +259,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
 
     if height != None:
         coor = IRL_to_coordinate(robot_midpoint,height,origin)
+        print(coor)
         if coor != None:
             cv2.circle(frame, (int(coor[0]), int(coor[1])), 5, (255, 0, 255),5)
         
@@ -283,7 +298,7 @@ def coordinate_to_IRL(coordinate,height,origin=(0,0)):
     if coordinate == None:
         return None
     coordinate = (origin[1]-coordinate[1], origin[0]-coordinate[0])
-    factor = 100/height
+    factor = MAP_HEIGHT/height
     x = coordinate[0]*factor
     y = coordinate[1]*factor
     return (x,y)
@@ -291,7 +306,7 @@ def coordinate_to_IRL(coordinate,height,origin=(0,0)):
 def IRL_to_coordinate(coordinate,height,origin=(0,0)):
     if coordinate == None:
         return None
-    factor = height/100
+    factor = height/MAP_HEIGHT
     x = coordinate[0]*factor
     y = coordinate[1]*factor
     coordinate = (origin[1]-y, origin[0]-x)
