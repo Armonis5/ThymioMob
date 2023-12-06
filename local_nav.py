@@ -28,10 +28,7 @@ def predict(state, input_val, covariance, Ts, theta, process_noise, thymio_b=11,
 
 def measure(state, covariance, cam_measurement, measurement_noise, position):
     # Update step based on camera measurement
-    print("befor np array pos", position)
     position = np.array(position)
-    print("cam_measurement", cam_measurement)
-    print("position", position)
     if cam_measurement: # camera not covered
         C = np.array([[1, 0, 0, 0, 0, 0],
                     [0, 1, 0, 0, 0, 0]])  # Measurement matrix
