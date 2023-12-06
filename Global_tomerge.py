@@ -218,10 +218,10 @@ def object_ptsname(object_edges):
 #Finding the shortest path
 
 #Check if two points are connected
-def is_connected(point1, point2, object_edges, RandG):
-    point_names = name2coord(object_edges, RandG)
+def is_connected(point1, point2, expended_corners, RandG, object_corners):
+    point_names = name2coord(expended_corners, RandG)
     coordinate_to_name = {v: k for k, v in point_names.items()} #New dictionary with coordinates as key and point name as value
-    point_objects = object_ptsname(object_edges)
+    point_objects = object_ptsname(expended_corners)
     
     #if point1 and point2 are in same object but not adjacent return  false
     P1= coordinate_to_name[point1] #P1 is the name of the point1
@@ -241,7 +241,7 @@ def is_connected(point1, point2, object_edges, RandG):
 
     #We go through all object and check if the line between point1 and point2 
     #intersect with any of the vertices of an object
-    for object, points in object_edges.items():
+    for object, points in expended_corners.items():
         for j in range(len(points)):
             if j == (len(points) - 1):
                 #intersection with last vertice
@@ -256,12 +256,35 @@ def is_connected(point1, point2, object_edges, RandG):
                     #intersection with other vertices
                     if intersect(point1, point2, points[j], points[j + 1]):
                         return False
+
+    inside = False
+    for obj_id, corners in expended_corners.items():
+        if is_point_inside_quad(RandG['robot'], corners):    
+            inside = True
+              
+    if (P1 == 'R' or P2 == 'R') and inside:
+        for object, points in object_corners.items():
+            for j in range(len(points)):
+                if j == (len(points) - 1):
+                    #intersection with last vertice
+                    if intersect(point1, point2, points[j], points[0]):
+                        return False
+                else:
+                    #We skip the points if they are equal to point1 or point2
+                    if points[j] == point1 or points[j+1] == point2:
+                        continue
+                        
+                    else:
+                        #intersection with other vertices
+                        if intersect(point1, point2, points[j], points[j + 1]):
+                            return False
     return True
 
 
 
+
 #Creates a dictionnary with point name as key associated to a list of points names connected to it
-def generate_adjacency_list(object_edges, RandG):
+def generate_adjacency_list(object_edges, RandG, object_corners):
     point_names = name2coord(object_edges, RandG)
     adjacency_list = {}
 
@@ -269,7 +292,7 @@ def generate_adjacency_list(object_edges, RandG):
         adjacency_list[P1] = []
         for P2, coord2 in point_names.items():
             if P1 != P2:
-                if is_connected(coord1, coord2, object_edges, RandG):
+                if is_connected(coord1, coord2, object_edges, RandG, object_corners):
                     adjacency_list[P1].append(P2)
     return adjacency_list
 
