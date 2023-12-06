@@ -66,10 +66,12 @@ def compute_dimensions(blue_coordinates,old_height=0):
     if len(blue_coordinates) != 4:
         return 0,old_height
 
-    min_x = min(y[0] for circle in blue_coordinates for y in circle)
-    max_x = max(y[0] for circle in blue_coordinates for y in circle)
-    min_y = min(y[1] for circle in blue_coordinates for y in circle)
-    max_y = max(y[1] for circle in blue_coordinates for y in circle)
+        blue_coordinates[0][i]
+
+    min_x = min(y[0] for y in blue_coordinates[0])
+    max_x = max(y[0] for y in blue_coordinates[0])
+    min_y = min(y[1] for y in blue_coordinates[0])
+    max_y = max(y[1] for y in blue_coordinates[0])
 
     width = max_x - min_x
     height = max_y - min_y
@@ -149,7 +151,7 @@ def find_coordinates(contours, color, height=0):
             (x, y), radius = cv2.minEnclosingCircle(cnt)
             center = (int(x), int(y))
             radius = int(radius)
-            if radius >5:
+            if radius >5 :
                 coordinates.append((center, radius))
 
     return coordinates
