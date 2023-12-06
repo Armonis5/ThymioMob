@@ -355,7 +355,6 @@ def dijkstra(adjacency_list, point_names):
 
 
 def find_path(adjacency_list, point_names):
-    dist = 0
     previous_nodes = dijkstra(adjacency_list, point_names)
     path = ['G']
     current_node = 'G'
@@ -376,10 +375,8 @@ def is_point_inside_quad(point, quad_coords):
 
     for i in range(n):
         j = (i + 1) % n
-        if (
-            ((y_coords[i] <= y and y < y_coords[j]) or (y_coords[j] <= y and y < y_coords[i])) and
-            (x < (x_coords[j] - x_coords[i]) * (y - y_coords[i]) / (y_coords[j] - y_coords[i]) + x_coords[i])
-        ):
+        if (((y_coords[i] <= y and y < y_coords[j]) or (y_coords[j] <= y and y < y_coords[i])) and
+            (x < (x_coords[j] - x_coords[i]) * (y - y_coords[i]) / (y_coords[j] - y_coords[i]) + x_coords[i])):
             inside = not inside
     
     return inside
@@ -395,8 +392,20 @@ def find_closest_point (P, corners):
             closest_point = point
     return closest_point
 
-def go_out_of_obstacle(RandG, object_corners, path):
+
+def shortest_path(RandG, object_corners, expended_corners):
     for obj_id, corners in object_corners.items():
         if is_point_inside_quad(RandG['robot'], corners):
-            path = path[:1] + [find_closest_point(RandG['robot'], corners)] + path[1:]
-    return path
+            start = find_closest_point(RandG['robot'], corners)
+            initial_pose = RandG['robot']
+            RandG['robot'] = start
+            adjacent_list = generate_adjacency_list(expended_corners, RandG, object_corners)
+            points_name2coord = name2coord(expended_corners, RandG)
+            shortest_path = find_path(adjacent_list, points_name2coord)
+            shortest_path.insert(0, 'init')
+            points_name2coord['init'] = initial_pose
+            return shortest_path, adjacent_list, points_name2coord
+    points_name2coord = name2coord(expended_corners, RandG)
+    adjacent_list = generate_adjacency_list(expended_corners, RandG, object_corners)
+    shortest_path = find_path(adjacent_list, points_name2coord)
+    return shortest_path, adjacent_list, points_name2coord
