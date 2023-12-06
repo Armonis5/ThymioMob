@@ -1,5 +1,6 @@
 import random
 import math
+from math import sqrt
 
 #ALL FUNCTIONS
 
@@ -34,6 +35,7 @@ def get_delta(p1, p2, size_robot):
     deltay= abs(size_robot*math.sin(alpha))
     return deltax, deltay
 
+#Grow obstacles along diagonals to avoid collision with the robot
 def grow_obstacles(start_obj, size_robot):
     # Calculate the adjusted coordinates for each vertex
     expended_object = {}
@@ -182,9 +184,12 @@ def intersect(p1,q1,p2,q2):
         return True
     return False 
 
+#############################################################################################################
+#Handle data for better lisibility
+
 #Give a name to avery point. Creates a dictionnary with names as key associated to point coordinates
 def name2coord(object_edges, GandS):
-    point_names = {}  # Dictionary to map points to unique names
+    point_names = {}
     j = 0
 
     for obj_id, points_list in object_edges.items():
@@ -195,23 +200,27 @@ def name2coord(object_edges, GandS):
     point_names['G']=GandS['goal']
     return point_names
 
-#Creates a dictionnary with object name as key associated to a list of points names belonging to object
+#Creates a dictionnary with object name as key associated to a list of points 
+#names belonging to object
 def object_ptsname(object_edges):
     point_names = {}  # Dictionary to map points to unique names
-    j = 0  # Starting point index
+    j = 0 
 
     for obj_id, points_list in object_edges.items():
-        point_names[obj_id] = []  # Initialize a list to store point names for each object
+        point_names[obj_id] = []
         for _ in points_list:
-            point_names[obj_id].append(f'P{j}')  # Append individual point names to the list
+            point_names[obj_id].append(f'P{j}')
             j += 1
 
     return point_names
 
+#############################################################################################################
+#Finding the shortest path
 
+#Check if two points are connected
 def is_connected(point1, point2, object_edges, RandG):
     point_names = name2coord(object_edges, RandG)
-    coordinate_to_name = {v: k for k, v in point_names.items()}
+    coordinate_to_name = {v: k for k, v in point_names.items()} #New dictionary with coordinates as key and point name as value
     point_objects = object_ptsname(object_edges)
     
     #if point1 and point2 are in same object but not adjacent return  false
@@ -227,23 +236,29 @@ def is_connected(point1, point2, object_edges, RandG):
                 return True
             if points.index(P2)==len(points)-1 and points.index(P1)==0:
                 return True
+            #If points in same object not adjacent, return false
             return False
-        
+
     #We go through all object and check if the line between point1 and point2 
     #intersect with any of the vertices of an object
     for object, points in object_edges.items():
         for j in range(len(points)):
             if j == (len(points) - 1):
+                #intersection with last vertice
                 if intersect(point1, point2, points[j], points[0]):
                     return False
             else:
+                #We skip the points if they are equal to point1 or point2
                 if points[j] == point1 or points[j+1] == point2:
                     continue
                     
                 else:
+                    #intersection with other vertices
                     if intersect(point1, point2, points[j], points[j + 1]):
                         return False
     return True
+
+
 
 #Creates a dictionnary with point name as key associated to a list of points names connected to it
 def generate_adjacency_list(object_edges, RandG):
@@ -258,11 +273,12 @@ def generate_adjacency_list(object_edges, RandG):
                     adjacency_list[P1].append(P2)
     return adjacency_list
 
-from math import sqrt
+
 
 #Eucledian distance
 def compute_dist(point1, point2):
     return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+
 
 #Creates a dictionnary with 2 connected points as key associated with their distance
 def calculate_distances(adjacency_list, point_names):
@@ -279,6 +295,7 @@ def calculate_distances(adjacency_list, point_names):
     
     return distances
 
+#Finds distance stored in dictionnary distances between two points
 def get_distance(distances, point1, point2):
     for points, dist in distances.items():
         if points[0] == point1 and points[1] == point2:
@@ -287,7 +304,7 @@ def get_distance(distances, point1, point2):
 
 def dijkstra(adjacency_list, point_names):
     shortest_dist = {} #store the best-known cost of visiting each point in the graph starting from start
-    previous_nodes = {} #store the trajectory of the current best known path for each node
+    previous_nodes = {} #store the previous node of the current best known path for each node
     unvisited_nodes = list(point_names.keys())
     distances = calculate_distances(adjacency_list, point_names)
     # We need to set every distance to infinity. We will simulate that using a very large value     
@@ -325,3 +342,38 @@ def find_path(adjacency_list, point_names):
     path.reverse()
     return path
 
+#############################################################################################################
+
+def is_point_inside_quad(point, quad_coords):
+    x, y = point
+    x_coords = [coord[0] for coord in quad_coords]
+    y_coords = [coord[1] for coord in quad_coords]
+    n = len(quad_coords)
+    inside = False
+
+    for i in range(n):
+        j = (i + 1) % n
+        if (
+            ((y_coords[i] <= y and y < y_coords[j]) or (y_coords[j] <= y and y < y_coords[i])) and
+            (x < (x_coords[j] - x_coords[i]) * (y - y_coords[i]) / (y_coords[j] - y_coords[i]) + x_coords[i])
+        ):
+            inside = not inside
+    
+    return inside
+
+
+def find_closest_point (P, corners):
+    Infinity = 10e10
+    min_dist = Infinity
+    for point in corners:
+        dist = compute_dist(P, point)
+        if dist < min_dist:
+            min_dist = dist
+            closest_point = point
+    return closest_point
+
+def go_out_of_obstacle(RandG, object_corners, path):
+    for obj_id, corners in object_corners.items():
+        if is_point_inside_quad(RandG['robot'], corners):
+            path = path[:1] + [find_closest_point(RandG['robot'], corners)] + path[1:]
+    return path
