@@ -92,8 +92,8 @@ def grow_obstacles(start_obj, size_robot):
                 print("error")
 
             #deltax, deltay=get_delta(p1,p2,size_robot)
-            deltax = size_robot/2
-            deltay = size_robot/2
+            deltax = size_robot
+            deltay = size_robot
             if case==1:
                 p1=(p1[0]-deltax,p1[1]+deltay)
                 p2=(p2[0]+deltax,p2[1]-deltay)
@@ -356,7 +356,8 @@ def dijkstra(adjacency_list, point_names):
 
     return previous_nodes
 
-
+#Finds shortest_path using Dijkstra algorithm and returns the list containing the point coordinates
+#following the path from the robot position to the goal
 def find_path(adjacency_list, point_names):
     previous_nodes = dijkstra(adjacency_list, point_names)
     path = ['G']
@@ -368,7 +369,9 @@ def find_path(adjacency_list, point_names):
     return path
 
 #############################################################################################################
+#Functions to solve the problem if the robot is inside an obstacle
 
+#Define if a point is inside a quadrilateral
 def is_point_inside_quad(point, quad_coords):
     x, y = point
     x_coords = [coord[0] for coord in quad_coords]
@@ -384,7 +387,7 @@ def is_point_inside_quad(point, quad_coords):
     
     return inside
 
-
+#Find clostest point of a quadrilateral to a given point
 def find_closest_point (P, corners):
     Infinity = 10e10
     min_dist = Infinity
@@ -396,7 +399,9 @@ def find_closest_point (P, corners):
     return closest_point
 
 
+#Find the shortest path considering the possibility that the robot is inside an obstacle
 def shortest_path(RandG, object_corners, expended_corners):
+    #Surch if robot is inside an obstacle
     for obj_id, corners in object_corners.items():
         if is_point_inside_quad(RandG['robot'], corners):
             start = find_closest_point(RandG['robot'], corners)
@@ -408,6 +413,7 @@ def shortest_path(RandG, object_corners, expended_corners):
             shortest_path.insert(0, 'init')
             points_name2coord['init'] = initial_pose
             return shortest_path, adjacent_list, points_name2coord
+    #If robot is not inside an obstacle find the pass normally
     points_name2coord = name2coord(expended_corners, RandG)
     adjacent_list = generate_adjacency_list(expended_corners, RandG, object_corners)
     shortest_path = find_path(adjacent_list, points_name2coord)
