@@ -7,18 +7,20 @@ from math import sqrt
 ############################################################################################################
 #Formatage des données de la caméra
 
-#Takes points given by camera and creates a dictionnary with object 
-#name as key associated to a list of points
+
 def create_dictionnary(objects):
+    """Takes points given by camera and creates a dictionnary with object 
+    name as key associated to a list of points"""
     object_dict = {}
     for i, pts_list in enumerate(objects):
         if len(pts_list) == 4:
             object_dict[f'object_{i+1}'] = pts_list
     return object_dict
 
-#Takes goal and start position coordinates from camera and creates
-#a dictionnary with object
+
 def create_RandG_dict(robot, goal):
+    """#Takes goal and start position coordinates from camera and creates
+    a dictionnary with object"""
     RandG = {
         'robot': robot,
         'goal': goal
@@ -27,8 +29,8 @@ def create_RandG_dict(robot, goal):
 
 
 
-#Grow obstacles along diagonals to avoid collision with the robot
 def grow_obstacles(start_obj, size_robot):
+    """Grow obstacles along diagonals to avoid collision with the robot"""
     # Calculate the adjusted coordinates for each vertex
     expended_object = {}
 
@@ -113,8 +115,9 @@ def grow_obstacles(start_obj, size_robot):
 #From the list of point I need to establish which points are connected to each other.
 #The points are connected if they don't cross a line connecting points from the same object.
 
-#function that defines the orientation of three given points
+
 def compute_orientation(p1,p2,p3):
+    """function that defines the orientation of three given points"""
     x1, y1 = p1
     x2, y2 = p2
     x3, y3 = p3
@@ -127,8 +130,9 @@ def compute_orientation(p1,p2,p3):
     else:
         return 1  # Counterclockwise orientation
 
-#For 3 collinear points a,b,c, we search if point c lies on segment ab    
+   
 def onSegment(a, b, c): 
+    """For 3 collinear points a,b,c, we search if point c lies on segment ab """
     xa, ya = a
     xb, yb = b
     xc, yc = c
@@ -137,8 +141,9 @@ def onSegment(a, b, c):
         return True
     return False
 
-#function that checks if two line segments intersect
+
 def intersect(p1,q1,p2,q2):
+    """function that checks if two line segments intersect"""
     xp1, yp1 = p1
     xq1, yq1 = q1
     xp2, yp2 = p2
@@ -180,8 +185,10 @@ def intersect(p1,q1,p2,q2):
 #############################################################################################################
 #Handle data for better lisibility
 
-#Give a name to avery point. Creates a dictionnary with names as key associated to point coordinates
+
 def name2coord(object_edges, GandS):
+    """Give a name to avery point. Creates a dictionnary with names as key associated 
+    to point coordinates"""
     point_names = {}
     j = 0
 
@@ -193,9 +200,10 @@ def name2coord(object_edges, GandS):
     point_names['G']=GandS['goal']
     return point_names
 
-#Creates a dictionnary with object name as key associated to a list of points 
-#names belonging to object
+
 def object_ptsname(object_edges):
+    """Creates a dictionnary with object name as key associated to a list of points 
+    names belonging to object"""
     point_names = {}  # Dictionary to map points to unique names
     j = 0 
 
@@ -210,8 +218,9 @@ def object_ptsname(object_edges):
 #############################################################################################################
 #Finding the shortest path
 
-#Check if two points are connected
+
 def is_connected(point1, point2, expended_corners, RandG, object_corners):
+    """Check if two points are connected"""
     point_names = name2coord(expended_corners, RandG)
     coordinate_to_name = {v: k for k, v in point_names.items()} #New dictionary with coordinates as key and point name as value
     point_objects = object_ptsname(expended_corners)
@@ -276,8 +285,9 @@ def is_connected(point1, point2, expended_corners, RandG, object_corners):
 
 
 
-#Creates a dictionnary with point name as key associated to a list of points names connected to it
 def generate_adjacency_list(object_edges, RandG, object_corners):
+    """Creates a dictionnary with point name as key associated to a list 
+    of points names connected to it"""
     point_names = name2coord(object_edges, RandG)
     adjacency_list = {}
 
@@ -291,13 +301,14 @@ def generate_adjacency_list(object_edges, RandG, object_corners):
 
 
 
-#Eucledian distance
 def compute_dist(point1, point2):
+    """Eucledian distance"""
     return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
 
 
-#Creates a dictionnary with 2 connected points as key associated with their distance
+
 def calculate_distances(adjacency_list, point_names):
+    """Creates a dictionnary with 2 connected points as key associated with their distance"""
     distances = {}  # Dictionary to store distances between connected points
 
     for point, connected_points in adjacency_list.items():
@@ -311,8 +322,9 @@ def calculate_distances(adjacency_list, point_names):
     
     return distances
 
-#Finds distance stored in dictionnary distances between two points
+
 def get_distance(distances, point1, point2):
+    """Finds distance stored in dictionnary distances between two points"""
     for points, dist in distances.items():
         if points[0] == point1 and points[1] == point2:
             return dist
@@ -346,9 +358,10 @@ def dijkstra(adjacency_list, point_names):
 
     return previous_nodes
 
-#Finds shortest_path using Dijkstra algorithm and returns the list containing the point coordinates
-#following the path from the robot position to the goal
+
 def find_path(adjacency_list, point_names):
+    """Finds shortest_path using Dijkstra algorithm and returns the list containing the point coordinates
+    following the path from the robot position to the goal"""
     previous_nodes = dijkstra(adjacency_list, point_names)
     path = ['G']
     current_node = 'G'
@@ -361,8 +374,9 @@ def find_path(adjacency_list, point_names):
 #############################################################################################################
 #Functions to solve the problem if the robot is inside an obstacle
 
-#Define if a point is inside a quadrilateral
+
 def is_point_inside_quad(point, quad_coords):
+    """Define if a point is inside a quadrilateral"""
     x, y = point
     x_coords = [coord[0] for coord in quad_coords]
     y_coords = [coord[1] for coord in quad_coords]
@@ -377,8 +391,9 @@ def is_point_inside_quad(point, quad_coords):
     
     return inside
 
-#Find clostest point of a quadrilateral to a given point
+
 def find_closest_point (P, corners):
+    """Find clostest point of a quadrilateral to a given point"""
     Infinity = 10e10
     min_dist = Infinity
     for point in corners:
@@ -389,8 +404,9 @@ def find_closest_point (P, corners):
     return closest_point
 
 
-#Find the shortest path considering the possibility that the robot is inside an obstacle
+
 def shortest_path(RandG, object_corners, expended_corners):
+    """Find the shortest path considering the possibility that the robot is inside an obstacle"""
     #Surch if robot is inside an obstacle
     for obj_id, corners in object_corners.items():
         if is_point_inside_quad(RandG['robot'], corners):
