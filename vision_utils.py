@@ -10,7 +10,7 @@ PATH_COLOR = (0,0,150)
 
 def draw_point(frame, point, color=(0, 255, 100), radius=5):
     point = (int(point[0]), int(point[1]))
-    cv2.circle(frame, point, radius, color, 2)
+    cv2.circle(frame, point, radius, color, -1)
 
 def draw_arrow(frame, start_point, end_point, color=(0, 0, 255), thickness=2):
     cv2.arrowedLine(frame, start_point, end_point, color, thickness)

@@ -8,6 +8,10 @@ import math
 MAP_HEIGHT = 100
 MAP_WIDTH = 75
 
+HEIGHT_DELTA = 5
+WIDTH_DELTA = 5
+ORIGIN_DELTA = 5
+
 GREEN_BGR = np.uint8([[[0, 255, 0]]])
 BLUE_BGR = np.uint8([[[255, 0, 0]]])
 BLACK_BGR = np.uint8([[[0, 0, 0]]])
@@ -199,24 +203,33 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     if blue_contours is not None:
         blue_coordinates = find_coordinates(blue_contours, 'Blue')
         # Wraping of the frame, to make sure the blues circles is always on the corner of the frame
+        old_height = height
+        old_origin = origin
+        old_width = width
         width, height,origin = compute_dimensions(blue_coordinates,height,origin)
         if height < width:
-            tmp = height
-            height = width
-            width = tmp
-        if len(blue_coordinates) == 4:
-            # compute the perspective transform matrix and then apply it
-            bcoor = [b[0] for b in blue_coordinates]
-            src = np.array(bcoor, dtype="float32")
-            dst = np.array([(height,width), (0,width), (height,0), (0,0)], dtype="float32")
-            M = cv2.getPerspectiveTransform(src, dst)
-            frame = cv2.warpPerspective(frame, M, (height, width))
-            bc = [transform_point(b[0],M) for b in blue_coordinates]
-            width,height,origin = compute_transform_dimensions(bc)
-            if height < width:
                 tmp = height
                 height = width
                 width = tmp
+        if abs(old_height-height) < HEIGHT_DELTA and abs(old_width-width) < WIDTH_DELTA and abs(old_origin[0]-origin[0]) < ORIGIN_DELTA and abs(old_origin[1]-origin[1]) < ORIGIN_DELTA:
+            height = old_height
+            width = old_width
+            origin = old_origin
+        else:
+            
+            if len(blue_coordinates) == 4:
+                # compute the perspective transform matrix and then apply it
+                bcoor = [b[0] for b in blue_coordinates]
+                src = np.array(bcoor, dtype="float32")
+                dst = np.array([(height,width), (0,width), (height,0), (0,0)], dtype="float32")
+                M = cv2.getPerspectiveTransform(src, dst)
+                frame = cv2.warpPerspective(frame, M, (height, width))
+                bc = [transform_point(b[0],M) for b in blue_coordinates]
+                width,height,origin = compute_transform_dimensions(bc)
+                if height < width:
+                    tmp = height
+                    height = width
+                    width = tmp
 
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)

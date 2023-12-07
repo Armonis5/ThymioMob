@@ -241,25 +241,7 @@ def is_connected(point1, point2, expended_corners, RandG, object_corners):
 
     #We go through all object and check if the line between point1 and point2 
     #intersect with any of the vertices of an object
-    if not check_intersection_with_object(point1,point2,expended_corners):
-        return False
-                    
-    #Find weather the robot is inside an grown obstacle
-    inside = False
-    for obj_id, corners in expended_corners.items():
-        if is_point_inside_quad(RandG['robot'], corners):    
-            inside = True
-    
-    #If the robot is inside an expended object, goes through vertices of non expended obstacles 
-    #and connects only to points that don't cross any vertices of non expended obstacles
-    if (P1 == 'R' or P2 == 'R') and inside:
-        return check_intersection_with_object(point1,point2,object_corners)
-    
-    return True
-
-
-def check_intersection_with_object(point1,point2,object_corners):
-    for object, points in object_corners.items():
+    for object, points in expended_corners.items():
         for j in range(len(points)):
             if j == (len(points) - 1):
                 #intersection with last vertice
@@ -274,7 +256,30 @@ def check_intersection_with_object(point1,point2,object_corners):
                     #intersection with other vertices
                     if intersect(point1, point2, points[j], points[j + 1]):
                         return False
+
+    inside = False
+    for obj_id, corners in expended_corners.items():
+        if is_point_inside_quad(RandG['robot'], corners):    
+            inside = True
+              
+    if (P1 == 'R' or P2 == 'R') and inside:
+        for object, points in object_corners.items():
+            for j in range(len(points)):
+                if j == (len(points) - 1):
+                    #intersection with last vertice
+                    if intersect(point1, point2, points[j], points[0]):
+                        return False
+                else:
+                    #We skip the points if they are equal to point1 or point2
+                    if points[j] == point1 or points[j+1] == point2:
+                        continue
+                        
+                    else:
+                        #intersection with other vertices
+                        if intersect(point1, point2, points[j], points[j + 1]):
+                            return False
     return True
+
 
 
 
@@ -350,7 +355,6 @@ def dijkstra(adjacency_list, point_names):
 
 
 def find_path(adjacency_list, point_names):
-    dist = 0
     previous_nodes = dijkstra(adjacency_list, point_names)
     path = ['G']
     current_node = 'G'
@@ -361,7 +365,6 @@ def find_path(adjacency_list, point_names):
     return path
 
 #############################################################################################################
-#Solve problem if robot gets somehow inside an object
 
 def is_point_inside_quad(point, quad_coords):
     x, y = point
@@ -372,10 +375,8 @@ def is_point_inside_quad(point, quad_coords):
 
     for i in range(n):
         j = (i + 1) % n
-        if (
-            ((y_coords[i] <= y and y < y_coords[j]) or (y_coords[j] <= y and y < y_coords[i])) and
-            (x < (x_coords[j] - x_coords[i]) * (y - y_coords[i]) / (y_coords[j] - y_coords[i]) + x_coords[i])
-        ):
+        if (((y_coords[i] <= y and y < y_coords[j]) or (y_coords[j] <= y and y < y_coords[i])) and
+            (x < (x_coords[j] - x_coords[i]) * (y - y_coords[i]) / (y_coords[j] - y_coords[i]) + x_coords[i])):
             inside = not inside
     
     return inside
@@ -391,8 +392,20 @@ def find_closest_point (P, corners):
             closest_point = point
     return closest_point
 
-def go_out_of_obstacle(RandG, object_corners, path):
+
+def shortest_path(RandG, object_corners, expended_corners):
     for obj_id, corners in object_corners.items():
         if is_point_inside_quad(RandG['robot'], corners):
-            path = path[:1] + [find_closest_point(RandG['robot'], corners)] + path[1:]
-    return path
+            start = find_closest_point(RandG['robot'], corners)
+            initial_pose = RandG['robot']
+            RandG['robot'] = start
+            adjacent_list = generate_adjacency_list(expended_corners, RandG, object_corners)
+            points_name2coord = name2coord(expended_corners, RandG)
+            shortest_path = find_path(adjacent_list, points_name2coord)
+            shortest_path.insert(0, 'init')
+            points_name2coord['init'] = initial_pose
+            return shortest_path, adjacent_list, points_name2coord
+    points_name2coord = name2coord(expended_corners, RandG)
+    adjacent_list = generate_adjacency_list(expended_corners, RandG, object_corners)
+    shortest_path = find_path(adjacent_list, points_name2coord)
+    return shortest_path, adjacent_list, points_name2coord
