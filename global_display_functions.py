@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import random
-import Global_tomerge as global_nav
+import global_nav as global_nav
 from matplotlib.patches import Polygon
 import math
 
