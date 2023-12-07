@@ -26,16 +26,6 @@ def create_RandG_dict(robot, goal):
     return RandG
 
 
-#To use in grow_obsracles function
-#It calculates angle between point p1 and p2 and finds the distance
-#we should move the points in x and y
-def get_delta(p1, p2, size_robot):
-    alpha = math.atan2((p1[1]-p2[1]),(p1[0]-p2[0]))
-    deltax= abs(size_robot*math.cos(alpha))
-    deltay= abs(size_robot*math.sin(alpha))
-    return deltax, deltay
-
-
 
 #Grow obstacles along diagonals to avoid collision with the robot
 def grow_obstacles(start_obj, size_robot):
@@ -92,7 +82,6 @@ def grow_obstacles(start_obj, size_robot):
                 print("error")
 
             #add or remove robot size depending on the case
-            #deltax, deltay=get_delta(p1,p2,size_robot)
             deltax = size_robot
             deltay = size_robot
             if case==1:
