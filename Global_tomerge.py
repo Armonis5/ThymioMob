@@ -35,6 +35,8 @@ def get_delta(p1, p2, size_robot):
     deltay= abs(size_robot*math.sin(alpha))
     return deltax, deltay
 
+
+
 #Grow obstacles along diagonals to avoid collision with the robot
 def grow_obstacles(start_obj, size_robot):
     # Calculate the adjusted coordinates for each vertex
@@ -89,8 +91,9 @@ def grow_obstacles(start_obj, size_robot):
             else:
                 print("error")
 
-            deltax, deltay=get_delta(p1,p2,size_robot)
-    
+            #deltax, deltay=get_delta(p1,p2,size_robot)
+            deltax = size_robot/2
+            deltay = size_robot/2
             if case==1:
                 p1=(p1[0]-deltax,p1[1]+deltay)
                 p2=(p2[0]+deltax,p2[1]-deltay)
