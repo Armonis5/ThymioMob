@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+# Function to predict the next state of the robot, using the information it has from the current state
+
 def predict(state, input_val, covariance, Ts, theta, process_noise, thymio_b=11, thymio_r=2):
     # Prediction step
     A = np.array([[1, 0, Ts, 0, 0, 0],  # system matrix
@@ -26,6 +28,9 @@ def predict(state, input_val, covariance, Ts, theta, process_noise, thymio_b=11,
 
     return new_state, new_covariance
 
+
+
+# Function to update the Kalman filter, using the camera measurement of the current position of the robot
 
 def measure(state, covariance, cam_measurement, measurement_noise, position):
     position = np.array(position)
@@ -61,7 +66,9 @@ def turn_to_target(pos_1, pos_2, thymio_angle): #turn towards the target when th
     return angle_diff
 """
 
-def go_to_target(pos_1, pos_2, thymio_angle, angle_gain = 1): # code to keep Thymio going in the right direction
+# Function to keep Thymio going in the right direction
+
+def go_to_target(pos_1, pos_2, thymio_angle, angle_gain = 1): 
     global motor_left_target, motor_right_target
     thymio_angle = thymio_angle/math.pi*180
     x_dist = pos_2[0] - pos_1[0]
@@ -93,13 +100,18 @@ def go_to_target(pos_1, pos_2, thymio_angle, angle_gain = 1): # code to keep Thy
     return motor_left_target, motor_right_target
 
 
-def check_target(state, coordinate, cor): # checks if the Thymio has reached its next target or is very close to its next target (hence the "cor")
+
+ # Function to check if the Thymio has reached or is very close to its next target
+
+def check_target(state, coordinate, cor):
     if (state[0]>(coordinate[0]+cor) or state[0]<(coordinate[0]-cor)) or (state[1]>(coordinate[1]+cor) or state[1]<(coordinate[1]-cor)):
         return True
     return False
 
 
-def convert_speed(thymio_speed): # takes thymio speed and outputs real speed (cm/s), determined experimentally
+# Function to convert the internal Thymio speed to cm/s
+
+def convert_speed(thymio_speed):
     if thymio_speed == 0:
         return 0
     real_speed_7s = 0.2179*thymio_speed + 0.9714
