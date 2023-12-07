@@ -191,34 +191,42 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     hsv_filtered = cv2.bilateralFilter(hsv,9, 80, 80)
 
+    # Define color ranges for blue squares
     blue_lower, blue_upper = hsv_range(BLUE_BGR, color_threashold, saturation_threshold, brightness_threshold)
     # Define color ranges for blue squares
     blue_mask = cv2.inRange(hsv_filtered, blue_lower, blue_upper)
+    # Find contours for blue squares
     blue_contours, _ = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #Only countours with area greater than 1000
+    # Keep only countours with area greater than 100
     blue_contours = [cnt for cnt in blue_contours if cv2.contourArea(cnt) > CIRCLE_AREA_THRESHOLD]
-    cv2.drawContours(frame, blue_contours, -1, (0, 255, 255), 3);  # Yellow    color for   blue    squares
-    # Blue circles
+    # Yellow color for blue circles
+    cv2.drawContours(frame, blue_contours, -1, (0, 255, 255), 3);
+
+    # Blue circles management
     blue_coordinates = []
     if blue_contours is not None:
+        # Find the coordinates of the blue circles
         blue_coordinates = find_coordinates(blue_contours, 'Blue')
-        # Wraping of the frame, to make sure the blues circles is always on the corner of the frame
+        # Store the old values
         old_height = height
         old_origin = origin
         old_width = width
-        width, height,origin = compute_dimensions(blue_coordinates,height,origin)
+        # Compute the dimensions of the map
+        width, height,origin = compute_dimensions(blue_coordinates,height,origin) 
+        # Keep height always greater than width
         if height < width:
                 tmp = height
                 height = width
                 width = tmp
+        # If the dimensions of the map are not changed, keep the old values
         if abs(old_height-height) < HEIGHT_DELTA and abs(old_width-width) < WIDTH_DELTA and abs(old_origin[0]-origin[0]) < ORIGIN_DELTA and abs(old_origin[1]-origin[1]) < ORIGIN_DELTA:
             height = old_height
             width = old_width
             origin = old_origin
-        else:
-            
+        else: 
+
             if len(blue_coordinates) == 4:
-                # compute the perspective transform matrix and then apply it
+                # Compute the perspective transform matrix and then apply it
                 bcoor = [b[0] for b in blue_coordinates]
                 src = np.array(bcoor, dtype="float32")
                 dst = np.array([(height,width), (0,width), (height,0), (0,0)], dtype="float32")
@@ -231,37 +239,39 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
                     height = width
                     width = tmp
 
-
+        # Recompute the color for the warped image
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         hsv_filtered = cv2.bilateralFilter(hsv,9, 80, 80)
 
+    # Define color ranges for green squares
     green_lower, green_upper = hsv_range(GREEN_BGR, color_threashold, saturation_threshold, brightness_threshold)
+    # Define color ranges for black squares or rectangles
     black_lower, black_upper = black_range_hsv(brightness_threshold-1)
+    # Define color ranges for red shapes
     red_lower, red_upper = hsv_range(RED_BGR, color_threashold, saturation_threshold, brightness_threshold)
 
-    # Define color ranges for green squares
+    # Green mask
     green_mask = cv2.inRange(hsv_filtered, green_lower, green_upper)
-   
-    # Define color ranges for black squares or rectangles
+    # Black mask
     black_mask = cv2.inRange(hsv_filtered, black_lower, black_upper)
-    # Define color ranges for red shapes
+    # Red mask
     red_mask = cv2.inRange(hsv_filtered, red_lower, red_upper)
 
-    # Find contours for each colour
+    # Find contours for each colour and keep only the ones with area greater than a certain threshold
     green_contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #Only countours with area greater than 1000
     green_contours = [cnt for cnt in green_contours if cv2.contourArea(cnt) > RECTANGLE_AREA_THRESHOLD]
+
     black_contours, _ = cv2.findContours(black_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #Only countours with area greater than 1000
     black_contours = [cnt for cnt in black_contours if cv2.contourArea(cnt) > RECTANGLE_AREA_THRESHOLD]
-    #Only countours with area greater than 1000
+
     red_contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     red_contours = [cnt for cnt in red_contours if cv2.contourArea(cnt) > RED_AREA_THRESHOLD]
-    cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red       color for   black   squares
-    cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);   # Green    color for   green   squares
-    cv2.drawContours(frame, red_contours, -1, (0, 0, 0), 3);  # Black    color for   red    squares
 
-    # Define the coordinates of the map
+    # Draw contours on the warped frame
+    cv2.drawContours(frame, black_contours, -1, (0, 0, 255), 3);    # Red   color for   black   squares
+    cv2.drawContours(frame, green_contours, -1, (0, 255,0), 3);     # Green color for   green   squares
+    cv2.drawContours(frame, red_contours, -1, (0, 0, 0), 3);        # Black color for   red    squares
+
     # Green squares
     green_coordinates = []
     midpoints = None
