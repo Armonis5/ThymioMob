@@ -92,9 +92,8 @@ def grow_obstacles(start_obj, size_robot):
                 print("error")
 
             #add or remove robot size depending on the case
-            #deltax, deltay=get_delta(p1,p2,size_robot)
-            deltax = size_robot
-            deltay = size_robot
+            deltax, deltay=get_delta(p1,p2,size_robot)
+
             if case==1:
                 p1=(p1[0]-deltax,p1[1]+deltay)
                 p2=(p2[0]+deltax,p2[1]-deltay)
