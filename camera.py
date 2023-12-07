@@ -5,6 +5,7 @@ import vision_utils as utils
 import matplotlib.colors as colors
 import math
 
+# Constants
 MAP_HEIGHT = 100
 MAP_WIDTH = 75
 
@@ -18,7 +19,7 @@ BLACK_BGR = np.uint8([[[0, 0, 0]]])
 RED_BGR = np.uint8([[[0, 0, 255]]])
 
 
-### Based parameters for the color detection
+# Based parameters for the color detection
 COLOR_THRESHOLD = 20
 SATURATION_THRESHOLD = 110
 BRIGHTNESS_THRESHOLD = 70
@@ -28,31 +29,23 @@ RECTANGLE_AREA_THRESHOLD = 500
 RED_AREA_THRESHOLD = 50
 
 
-
-# GREEN_HSV_LOWER = np.array([35, 80, 80])
-# GREEN_HSV_UPPER = np.array([145, 255, 255])
-# BLUE_HSV_LOWER = np.array([170, 80, 80])
-# BLUE_HSV_UPPER = np.array([270, 255, 255])
-# BLACK_HSV_LOWER = np.array([0, 0, 0])
-# BLACK_HSV_UPPER = np.array([360, 255, 255])
-
-
 def color_to_hsv(color):
+    """
+    Convert a color from BGR to HSV format
+    """
     hsv_color = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
     return hsv_color
     
 
-# Calculate the saturation of each rgb channel and return the average, knowing that the image is in HSV format
-def image_saturation(image):
-    saturation = np.mean(image, axis=2)
-    return saturation
-
-def hsv_range(base_color, color_threashold,saturation_threshold, brightness_threshold):
+def hsv_range(base_color, color_threshold,saturation_threshold, brightness_threshold):
+    """
+    Calculate the lower and upper range of the color in HSV format based on the base color and the color threshold
+    """
     # Convert base color to HSV
     hsv_base_color = color_to_hsv(base_color)
     # Extract hue, saturation and value from base color
-    lower = hsv_base_color[0][0][0] - color_threashold, saturation_threshold, brightness_threshold
-    upper = hsv_base_color[0][0][0] + color_threashold, 255, 255
+    lower = hsv_base_color[0][0][0] - color_threshold, saturation_threshold, brightness_threshold
+    upper = hsv_base_color[0][0][0] + color_threshold, 255, 255
     if lower[0] < 0:
         lower = 0, lower[1], lower[2]
     if upper[0] > 360:
@@ -74,6 +67,9 @@ def hsv_range(base_color, color_threashold,saturation_threshold, brightness_thre
     return lower, upper
 
 def compute_dimensions(blue_coordinates,old_height=0,old_origin=(0,0)):
+    """
+    Compute the dimensions of the map based on the blue squares
+    """
     if len(blue_coordinates) != 4:
         return 0,old_height,old_origin
     min_x = min(blue_coord[0][0] for blue_coord in blue_coordinates)
@@ -86,6 +82,9 @@ def compute_dimensions(blue_coordinates,old_height=0,old_origin=(0,0)):
     return width, height, origin
 
 def compute_transform_dimensions(dots):
+    """
+    Compute the dimensions of the map afeter the perspective transform
+    """
     min_x = min(coord[0] for coord in dots)
     max_x = max(coord[0] for coord in dots)
     min_y = min(coord[1] for coord in dots)
@@ -97,18 +96,22 @@ def compute_transform_dimensions(dots):
 
 
 def black_range_hsv(brightness_threshold):
+    """
+    Calculate the lower and upper range of the black color in HSV format based on the brightness threshold
+    """
     lower = np.array([0, 0, 0])
     upper = np.array([360, 255, brightness_threshold-1])
     return lower, upper
 
 def find_coordinates(contours, color,width=0, height=0,origin=(0,0)):
+    """
+    Find the coordinates of the shapes in the frame, differentiating between black, green and blue shapes
+    """
     coordinates = []
     obstacle_counter = 0
     blue_circle_counter = 0
     for cnt in contours:
         approx = cv2.approxPolyDP(cnt, 0.009 * cv2.arcLength(cnt, True), True)
-        #if len(approx) == 4:
-            # Code for rectangles (existing logic)
         rectangle = cv2.minAreaRect(cnt)
         box = cv2.boxPoints(rectangle)
         box = np.intp(box)
@@ -147,6 +150,9 @@ def find_coordinates(contours, color,width=0, height=0,origin=(0,0)):
     return coordinates
 
 def midpoint_robot(contours,width, height,origin=(0,0)):
+    """
+    Find the midpoint between the centroids of a rectangle and a triangle
+    """
     # Filter rectangles and triangles
     red_rectangles = []
     red_triangles = []
@@ -180,8 +186,19 @@ def midpoint_robot(contours,width, height,origin=(0,0)):
     
     return None, None, None  # Return None if shapes are not found or condition not met
 
-def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_threshold=SATURATION_THRESHOLD,
+def detection(frame,mode,color_type,color_threshold=COLOR_THRESHOLD,saturation_threshold=SATURATION_THRESHOLD,
               brightness_threshold=BRIGHTNESS_THRESHOLD,width=75,height=100,origin=(0,0)):
+    """
+    Function that processes the frame by applying the color filters and the perspective transform to detect thes shapes in the frame
+    Detects the different colors as:    blue: references
+                                        green: goals
+                                        black: obstacles
+                                        red: robot
+    Returns the frame, the robot position, the robot angle, the goal position, the obstacle position, the reference position, 
+    the width, the height and the origin of the map
+    """
+
+
     match color_type:
         case 'BGR':
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -192,7 +209,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     hsv_filtered = cv2.bilateralFilter(hsv,9, 80, 80)
 
     # Define color ranges for blue squares
-    blue_lower, blue_upper = hsv_range(BLUE_BGR, color_threashold, saturation_threshold, brightness_threshold)
+    blue_lower, blue_upper = hsv_range(BLUE_BGR, color_threshold, saturation_threshold, brightness_threshold)
     # Define color ranges for blue squares
     blue_mask = cv2.inRange(hsv_filtered, blue_lower, blue_upper)
     # Find contours for blue squares
@@ -244,11 +261,11 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
         hsv_filtered = cv2.bilateralFilter(hsv,9, 80, 80)
 
     # Define color ranges for green squares
-    green_lower, green_upper = hsv_range(GREEN_BGR, color_threashold, saturation_threshold, brightness_threshold)
+    green_lower, green_upper = hsv_range(GREEN_BGR, color_threshold, saturation_threshold, brightness_threshold)
     # Define color ranges for black squares or rectangles
     black_lower, black_upper = black_range_hsv(brightness_threshold-1)
     # Define color ranges for red shapes
-    red_lower, red_upper = hsv_range(RED_BGR, color_threashold, saturation_threshold, brightness_threshold)
+    red_lower, red_upper = hsv_range(RED_BGR, color_threshold, saturation_threshold, brightness_threshold)
 
     # Green mask
     green_mask = cv2.inRange(hsv_filtered, green_lower, green_upper)
@@ -299,7 +316,7 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
     if len(green_coordinates)>0:
         green_coordinates = green_coordinates[0]
 
-
+    # Show the different masks
     match mode:
         case 'blue':
             frame = blue_mask
@@ -320,14 +337,19 @@ def detection(frame,mode,color_type,color_threashold=COLOR_THRESHOLD,saturation_
 
     return frame, robot_midpoint,angle_robot, green_coordinates, black_coordinates, blue_coordinates,width,height,origin
 
-# Check if the camera is hidden (i.e. if the mask detecting the black squares is empty)
 def is_camera_hidden(black_mask):
+    """
+    Detect if the camera is hidden by checking if the black mask is empty
+    """
     if np.sum(black_mask) == 0:
         return True
     else:
         return False
 
 def coordinate_to_IRL(coordinate,width,height,origin=(0,0)):
+    """
+    Transform the coordinates from the frame to the IRL coordinates
+    """
     coordinate = (origin[1]-coordinate[1], origin[0]-coordinate[0])
     h_factor = MAP_HEIGHT/height
     w_factor = MAP_WIDTH/width
@@ -336,6 +358,9 @@ def coordinate_to_IRL(coordinate,width,height,origin=(0,0)):
     return (x,y)
 
 def IRL_to_coordinate(coordinate,width,height,origin=(0,0)):
+    """
+    Transform the coordinates from the IRL coordinates to the frame
+    """
     if coordinate == None:
         return None
     h_factor = height/MAP_HEIGHT
@@ -346,17 +371,20 @@ def IRL_to_coordinate(coordinate,width,height,origin=(0,0)):
     return coordinate
 
 def robot_angle(square_centroid, triangle_centroid):
+    """
+    Calculate the angle of the robot based on the centroid of the square and the centroid of the triangle
+    """
     # Calculate vector from square centroid to triangle centroid
     vec = (triangle_centroid[0] - square_centroid[0], triangle_centroid[1] - square_centroid[1])
     # Calculate angle using arctan2
     angle_rad = math.atan2(vec[1], vec[0])
-    # Ensure angle is between 0 and 360 degrees
-    # if angle_deg < 0:
-    #     angle_deg += 360
 
     return angle_rad
 
 def coordinate_in_map(coordinate,width,height):
+    """
+    Check if the coordinate is in the map
+    """
     x = coordinate[0]
     y = coordinate[1]
     if x < 0 or x > width or y < 0 or y > height:
@@ -365,6 +393,9 @@ def coordinate_in_map(coordinate,width,height):
         return True
 
 def zoom_frame(frame, zoom_factor=2):
+    """
+    Zoom in the frame
+    """
     height, width = frame.shape[:2]
     new_height, new_width = int(height / zoom_factor), int(width / zoom_factor)
 
@@ -377,39 +408,11 @@ def zoom_frame(frame, zoom_factor=2):
     zoomed_frame = cv2.resize(cropped_frame, (width, height), interpolation=cv2.INTER_LINEAR)
     return zoomed_frame
 
-
-
-
-def capture_data(camera_index, num_frames=500):
-    cap = cv2.VideoCapture(camera_index)
-    data = []
-
-    while len(data) < num_frames:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        # Process frame to extract measurements
-        # Example: Extracting a central pixel value
-        center_pixel = frame[frame.shape[0] // 2, frame.shape[1] // 2, :]
-        data.append(center_pixel)
-
-    cap.release()
-    return np.array(data)
-
-def calculate_covariance_matrix(data):
-    return np.cov(data.T)
-
 def transform_point(point, matrix):
+    """
+    Transform a point using the perspective transform matrix
+    """
     point_homogeneous = np.array([point[0], point[1], 1])
     transformed_point = np.dot(matrix, point_homogeneous)
     transformed_point = transformed_point / transformed_point[2]
-    return transformed_point[:2]
-
-def inverse_transform_point(point,matrix):
-    inverse_matrix = np.linalg.inv(matrix)
-    point_homogeneous = np.array([point[0], point[1], 1])
-    transformed_point = np.dot(inverse_matrix, point_homogeneous)
-    transformed_point = transformed_point / transformed_point[2]
-
     return transformed_point[:2]
